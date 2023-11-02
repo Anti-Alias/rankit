@@ -1,10 +1,16 @@
+use std::net::SocketAddr;
+
 use dotenvy::dotenv;
-use rankit::AppResources;
+use rankit::{app, read_var, env};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     dotenv()?;
     env_logger::init();
-    let resources = AppResources::from_env().await?;
+    let address: SocketAddr = read_var(env::SERVER_ADDRESS)?.parse()?;
+    let app = app().await?;
+    axum::Server::bind(&address)
+        .serve(app.into_make_service())
+        .await?;
     Ok(())
 }

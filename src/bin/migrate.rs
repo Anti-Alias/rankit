@@ -17,7 +17,7 @@ async fn main() {
 
 async fn start() -> Result<(), anyhow::Error> {
     dotenvy::dotenv()?;
-    let mut config = Config::from_env_var(env::POSTGRES_CONNECTION)?;
+    let mut config = Config::from_env_var(env::APP_DB)?;
     embedded::migrations::runner()
         .run_async(&mut config)
         .await?;

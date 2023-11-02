@@ -1,1 +1,2 @@
-pub const POSTGRES_CONNECTION: &str = "POSTGRES_CONNECTION";
+pub const SERVER_ADDRESS: &str = "SERVER_ADDRESS";
+pub const APP_DB: &str = "APP_DB";

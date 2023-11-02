@@ -6,6 +6,7 @@ default-run = "rankit"
 
 [dependencies]
 anyhow = "1.0.75"
+axum = "0.6.20"
 derive_more = "0.99"
 dotenvy = "0.15.7"
 env_logger = "0.10.0"
