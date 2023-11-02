@@ -1,0 +1,19 @@
+[package]
+name = "rankit"
+version = "0.1.0"
+edition = "2021"
+default-run = "rankit"
+
+[dependencies]
+anyhow = "1.0.75"
+derive_more = "0.99"
+dotenvy = "0.15.7"
+env_logger = "0.10.0"
+log = "0.4.20"
+refinery = { version = "0.8.11", features = ["tokio-postgres", "default"] }
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-native-tls"] }
+tokio = { version = "1.33", features = ["full"] }
+tokio-postgres = "0.7"
+
+[profile.dev.package."*"]
+opt-level = 3
