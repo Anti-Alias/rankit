@@ -6,7 +6,8 @@ use axum::{routing::{Router, get, post}, response::{IntoResponse, Response}, htt
 use derive_more::{Error, Display, From};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 
-pub type JsonResponse<T> = Result<Json<T>, AppError>;
+/// Type alias for all app responses.
+pub type AppResponse<T> = Result<Json<T>, AppError>;
 
 /// Shared resources used by application.
 #[derive(Clone)]
@@ -42,6 +43,7 @@ pub enum AppError {
     DuplicateAccountName,
     DuplicateAccountEmail,
     SqlxError(sqlx::Error),
+    PasswordHashError(scrypt::password_hash::Error)
 }
 
 impl IntoResponse for AppError {
@@ -58,6 +60,11 @@ impl IntoResponse for AppError {
                     (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
                 }
             },
+            AppError::PasswordHashError(error) => {
+                log::error!("Password Hash Error: {error}");
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
+            },
+            
         }.into_response()
     }
 }

@@ -1,8 +1,9 @@
 use axum::{Json, extract::State};
+use scrypt::{password_hash::{rand_core::OsRng, SaltString, PasswordHasher}, Scrypt};
 use sqlx::{PgPool, FromRow};
 use serde::{Deserialize, Serialize};
 use tokio::try_join;
-use crate::{JsonResponse, AppState, AppError};
+use crate::{AppResponse, AppState, AppError};
 
 /// Request to create an account.
 #[derive(Deserialize, Debug)]
@@ -23,7 +24,7 @@ pub struct CreateAccountResponse {
 pub async fn create_account(
     State(state): State<AppState>,
     Json(request): Json<CreateAccountRequest>
-) -> JsonResponse<CreateAccountResponse> {
+) -> AppResponse<CreateAccountResponse> {
     
     // Checks for duplicates
     let name_count = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM account WHERE name = $1")
@@ -40,11 +41,17 @@ pub async fn create_account(
         return Err(AppError::DuplicateAccountEmail);
     }
 
-    // Fetches data
-    let response: CreateAccountResponse = sqlx::query_as("INSERT INTO account (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email")
+    // Hashes + salts password
+    let salt = SaltString::generate(&mut OsRng);
+    let password_hash = Scrypt
+        .hash_password(&request.password.as_bytes(), &salt)?
+        .to_string();    
+
+    // Inserts account and returns response
+    let response = sqlx::query_as("INSERT INTO account (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email")
         .bind(request.name)
         .bind(request.email)
-        .bind(request.password)
+        .bind(password_hash)
         .fetch_one(&state.pool)
         .await?;
     Ok(Json(response))
@@ -65,11 +72,17 @@ pub async fn create_root_account(
         return Ok(());
     }
 
+    // Hashes + salts password
+    let salt = SaltString::generate(&mut OsRng);
+    let password_hash = Scrypt
+        .hash_password(password.as_bytes(), &salt)?
+        .to_string();  
+
     // Creates root account
     sqlx::query("INSERT INTO account (name, email, password, role) VALUES ($1, $2, $3, 'root')")
         .bind(name)
         .bind(email)
-        .bind(password)
+        .bind(password_hash)
         .execute(pool)
         .await?;
     Ok(())
