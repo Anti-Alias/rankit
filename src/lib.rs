@@ -1,4 +1,6 @@
 pub mod env;
+pub mod account;
+pub mod migrate;
 
 use axum::routing::{Router, get};
 use derive_more::{Error, Display, From};
@@ -38,8 +40,7 @@ pub fn read_var(var_name: &str) -> Result<String, AppError> {
 }
 
 /// Creates application to serve.
-pub async fn app() -> Result<Router, anyhow::Error> {
-    let state = AppState::from_env().await?;
+pub async fn app(state: AppState) -> Result<Router, anyhow::Error> {
     let router = Router::new()
         .route("/health", get(health))
         .with_state(state);
