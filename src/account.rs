@@ -2,7 +2,7 @@ use axum::{Json, extract::State};
 use scrypt::{password_hash::{rand_core::OsRng, SaltString, PasswordHasher}, Scrypt};
 use sqlx::{PgPool, FromRow};
 use serde::{Deserialize, Serialize};
-use tokio::try_join;
+use tokio::{task, try_join};
 use crate::{AppResponse, AppState, AppError};
 
 /// Request to create an account.
@@ -42,10 +42,7 @@ pub async fn create_account(
     }
 
     // Hashes + salts password
-    let salt = SaltString::generate(&mut OsRng);
-    let password_hash = Scrypt
-        .hash_password(&request.password.as_bytes(), &salt)?
-        .to_string();    
+    let password_hash = generate_password_hash(request.password).await?;
 
     // Inserts account and returns response
     let response = sqlx::query_as("INSERT INTO account (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email")
@@ -73,10 +70,7 @@ pub async fn create_root_account(
     }
 
     // Hashes + salts password
-    let salt = SaltString::generate(&mut OsRng);
-    let password_hash = Scrypt
-        .hash_password(password.as_bytes(), &salt)?
-        .to_string();  
+    let password_hash = generate_password_hash(password.into()).await?;
 
     // Creates root account
     sqlx::query("INSERT INTO account (name, email, password, role) VALUES ($1, $2, $3, 'root')")
@@ -86,4 +80,16 @@ pub async fn create_root_account(
         .execute(pool)
         .await?;
     Ok(())
+}
+
+async fn generate_password_hash(password: String) -> Result<String, AppError> {
+    task::spawn_blocking(move || {
+        let salt = SaltString::generate(&mut OsRng);
+        Scrypt
+            .hash_password(password.as_bytes(), &salt)
+            .map(|pass_hash| pass_hash.to_string())
+            .map_err(|err| AppError::from(err))
+    })
+    .await
+    .expect("generate_password_hash background thread failed to join")
 }
