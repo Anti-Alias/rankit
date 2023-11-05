@@ -1,7 +1,10 @@
 use std::net::SocketAddr;
-
 use dotenvy::dotenv;
-use rankit::{app, read_var, env, AppState, account::create_root_account, migrate};
+use rankit::app::*;
+use rankit::migrate::migrate;
+use rankit::account::create_root_account;
+use rankit::env;
+
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -10,9 +13,9 @@ async fn main() -> Result<(), anyhow::Error> {
     env_logger::init();
 
     // Migrates DB
-    migrate::migrate().await?;
+    migrate().await?;
 
-    // Creates state and creates root account if it doesn't exist.
+    // Creates shared state and creates root account if it doesn't exist.
     let state = AppState::from_env().await?;
     create_root_account(
         read_var(env::APP_ROOT_ACCOUNT_NAME)?,
@@ -23,7 +26,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // Starts server.
     let address: SocketAddr = read_var(env::SERVER_ADDRESS)?;
-    let app = app(state).await?;
+    let app = create_app(state).await?;
     axum::Server::bind(&address)
         .serve(app.into_make_service())
         .await?;

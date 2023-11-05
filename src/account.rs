@@ -1,5 +1,7 @@
-use jwt::SignWithKey;
-use axum::{Json, extract::State};
+use jsonwebtoken::{encode, decode, Header, Validation};
+use axum::{Json, extract::State, middleware::Next};
+use axum::response::{Response, IntoResponse};
+use axum::http::{header, Request};
 use std::time::Duration;
 use chrono::Utc;
 use scrypt::{password_hash::{rand_core::OsRng, SaltString, PasswordHasher, PasswordHash, PasswordVerifier}, Scrypt};
@@ -40,23 +42,20 @@ pub struct Claims {
     pub role: Role,
 }
 
+impl Claims {
+    pub fn new(name: String, email: String, role: Role, exp_duration: Duration) -> Self {
+        let exp = (Utc::now() + exp_duration).timestamp();
+        Self { exp, name, email, role, }
+    }
+}
+
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Debug, sqlx::Type)]
 #[sqlx(rename_all = "lowercase")]
 pub enum Role { Basic, Root }
 
-impl Claims {
-    pub fn new(name: String, email: String, role: Role, exp_duration: Duration) -> Self {
-        let exp = (Utc::now() + exp_duration).timestamp();
-        Self {
-            exp,
-            name,
-            email,
-            role,
-        }
-    }
-}
 
-pub async fn create_account(
+/// Route that creates an account.
+pub async fn create(
     State(state): State<AppState>,
     Json(request): Json<CreateAccountRequest>,
 ) -> JsonResult<CreateAccountResponse> {
@@ -89,6 +88,7 @@ pub async fn create_account(
     Ok(Json(response))
 }
 
+/// Route that logs in a user.
 pub async fn login(
     State(state): State<AppState>,
     Json(request): Json<LoginRequest>,
@@ -101,23 +101,44 @@ pub async fn login(
         (None, None)        => return Err(AppError::EmailOrUsernameRequired),
     };
     let Some((email, name, role, password)) = result else {
-        return Err(AppError::AuthenticationFailed);
+        return Err(AppError::NoMatchingUser);
     };
 
     // Checks that passwords match.
     match verify_password(request.password.clone(), password).await {
-        Err(scrypt::password_hash::Error::Password) => return Err(AppError::AuthenticationFailed),
+        Err(scrypt::password_hash::Error::Password) => return Err(AppError::NoMatchingUser),
         Err(err) => return Err(AppError::PasswordHashError(err)),
         Ok(_) => {},
     }
     
     // Generates a JWT string
     let claims = Claims::new(email, name, role, state.claims_duration);
-    let claims_str = claims.sign_with_key(&state.claims_key)?;
+    let claims_str = encode(&Header::default(), &claims, &state.claims_encoding_key)?;
     Ok(claims_str)
 }
 
-/// Creates a root user if it does not already exist.
+/// Middleware function to authenticate users.
+pub async fn authenticate<B>(state: State<AppState>, mut request: Request<B>, next: Next<B>) -> Response {
+    let Some(authorization) = request.headers().get(header::AUTHORIZATION) else {
+        return AppError::MissingAuthHeader.into_response();
+    };
+    let authorization = match authorization.to_str() {
+        Ok(value) => value,
+        Err(_) => return AppError::NonAsciiHeader.into_response(),
+    };
+    let authorization = match skip_bearer(authorization) {
+        Ok(value) => value,
+        Err(err) => return err.into_response(),
+    };
+    let claims = match decode::<Claims>(authorization, &state.claims_decoding_key, &Validation::default()) {
+        Ok(value) => value,
+        Err(err) => return AppError::ClaimsError(err).into_response()
+    };
+    request.extensions_mut().insert(claims);
+    next.run(request).await
+}
+
+/// Utility function that creates a root account if it does not yet exist.
 pub async fn create_root_account(
     name: String,
     email: String,
@@ -145,6 +166,7 @@ pub async fn create_root_account(
     Ok(())
 }
 
+
 async fn generate_password_hash(password: String) -> Result<String, AppError> {
     task::spawn_blocking(move || {
         let salt = SaltString::generate(&mut OsRng);
@@ -165,4 +187,11 @@ async fn verify_password(password: String, existing_password: String) -> scrypt:
     })
     .await
     .expect("verify_password background thread failed to join")
+}
+
+fn skip_bearer(auth_token: &str) -> Result<&str, AppError> {
+    if auth_token.starts_with("Bearer ") {
+        return Ok(auth_token[7..].trim())
+    }
+    return Err(AppError::Unauthorized)
 }
