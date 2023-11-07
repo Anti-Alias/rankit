@@ -36,16 +36,22 @@ pub struct LoginRequest {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Claims {
+    /// Expiration time of claims in UTC seconds since epoch.
     pub exp: i64,
+    /// Account id.
+    pub id: i32,
+    /// Account name.
     pub name: String,
+    /// Account email.
     pub email: String,
+    /// Account role.
     pub role: Role,
 }
 
 impl Claims {
-    pub fn new(name: String, email: String, role: Role, exp_duration: Duration) -> Self {
+    pub fn new(id: i32, name: String, email: String, role: Role, exp_duration: Duration) -> Self {
         let exp = (Utc::now() + exp_duration).timestamp();
-        Self { exp, name, email, role, }
+        Self { exp, id, name, email, role, }
     }
 }
 
@@ -95,12 +101,12 @@ pub async fn login(
 ) -> Result<String, AppError> {
     
     // Fetches details of user matching either the email or username.
-    let result: Option<(String, String, Role, String)> = match (request.email, request.name) {
-        (_, Some(name))     => sqlx::query_as("SELECT email, name, role, password FROM account WHERE name=$1").bind(name).fetch_optional(&state.pool).await?,
-        (Some(email), _)    => sqlx::query_as("SELECT email, name, role, password FROM account WHERE email=$1").bind(email).fetch_optional(&state.pool).await?,
+    let result: Option<(i32, String, String, Role, String)> = match (request.email, request.name) {
+        (_, Some(name))     => sqlx::query_as("SELECT id, email, name, role, password FROM account WHERE name=$1").bind(name).fetch_optional(&state.pool).await?,
+        (Some(email), _)    => sqlx::query_as("SELECT id, email, name, role, password FROM account WHERE email=$1").bind(email).fetch_optional(&state.pool).await?,
         (None, None)        => return Err(AppError::EmailOrUsernameRequired),
     };
-    let Some((email, name, role, password)) = result else {
+    let Some((id, email, name, role, password)) = result else {
         return Err(AppError::NoMatchingUser);
     };
 
@@ -112,7 +118,7 @@ pub async fn login(
     }
     
     // Generates a JWT string
-    let claims = Claims::new(email, name, role, state.claims_duration);
+    let claims = Claims::new(id, email, name, role, state.claims_duration);
     let claims_str = encode(&Header::default(), &claims, &state.claims_encoding_key)?;
     Ok(claims_str)
 }
@@ -131,7 +137,7 @@ pub async fn authenticate<B>(state: State<AppState>, mut request: Request<B>, ne
         Err(err) => return err.into_response(),
     };
     let claims = match decode::<Claims>(authorization, &state.claims_decoding_key, &Validation::default()) {
-        Ok(value) => value,
+        Ok(token_data) => token_data.claims,
         Err(err) => return AppError::ClaimsError(err).into_response()
     };
     request.extensions_mut().insert(claims);
