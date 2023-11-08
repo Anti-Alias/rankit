@@ -7,33 +7,11 @@ use chrono::Utc;
 use scrypt::{password_hash::{rand_core::OsRng, SaltString, PasswordHasher, PasswordHash, PasswordVerifier}, Scrypt};
 use sqlx::{PgPool, FromRow};
 use serde::{Deserialize, Serialize};
-use tokio::{task, try_join};
+use tokio::task;
 use crate::{JsonResult, AppState, AppError};
 
-/// Request to create an account.
-#[derive(Deserialize, Debug)]
-pub struct CreateAccountRequest {
-    pub name: String,
-    pub email: String,
-    pub password: String
-}
 
-/// Response for a [`CreateAccountRequest`].
-#[derive(Serialize, FromRow)]
-pub struct CreateAccountResponse {
-    pub id: i32,
-    pub name: String,
-    pub email: String,
-}
-
-/// Request to login to an account.
-#[derive(Deserialize, Debug)]
-pub struct LoginRequest {
-    pub name: Option<String>,
-    pub email: Option<String>,
-    pub password: String
-}
-
+/// Account information to be encoded as a JWT.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Claims {
     /// Expiration time of claims in UTC seconds since epoch.
@@ -55,39 +33,56 @@ impl Claims {
     }
 }
 
+/// Role of an account, determining privileges.
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Debug, sqlx::Type)]
 #[sqlx(rename_all = "lowercase")]
 pub enum Role { Basic, Root }
 
+/// Request to create a new account.
+#[derive(Deserialize, Debug)]
+pub struct CreateAccountRequest {
+    pub name: String,
+    pub email: String,
+    pub password: String
+}
+
+/// Response to a [`CreateAccountRequest`].
+#[derive(Serialize, FromRow)]
+pub struct CreateAccountResponse {
+    pub id: i32,
+    pub name: String,
+    pub email: String,
+}
+
+/// Request to login to an existing account.
+#[derive(Deserialize, Debug)]
+pub struct LoginRequest {
+    pub name: Option<String>,
+    pub email: Option<String>,
+    pub password: String
+}
 
 /// Route that creates an account.
-pub async fn create(
-    State(state): State<AppState>,
-    Json(request): Json<CreateAccountRequest>,
-) -> JsonResult<CreateAccountResponse> {
+pub async fn create(state: State<AppState>, request: Json<CreateAccountRequest>) -> JsonResult<CreateAccountResponse> {
+
+    let state = state.0;
+    let request = request.0;
     
-    // Checks for duplicates
-    let name_count = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM account WHERE name = $1")
-        .bind(&request.name)
-        .fetch_one(&state.pool);
-    let email_count = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM account WHERE email = $1")
+    // Checks for duplicate accounts.
+    let account_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM account WHERE email=$1 OR name=$2")
         .bind(&request.email)
-        .fetch_one(&state.pool);
-    let (name_count, email_count) = try_join!(name_count, email_count)?;
-    if name_count.0 != 0 {
-        return Err(AppError::DuplicateAccountName);
-    }
-    if email_count.0 != 0 {
-        return Err(AppError::DuplicateAccountEmail);
+        .bind(&request.name)
+        .fetch_one(&state.pool)
+        .await?;
+    if account_count.0 != 0 {
+        return Err(AppError::DuplicateAccount);
     }
 
-    // Hashes + salts password
+    // Inserts new account and returns response.
     let password_hash = generate_password_hash(request.password).await?;
-
-    // Inserts account and returns response
     let response = sqlx::query_as("INSERT INTO account (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email")
-        .bind(request.name)
-        .bind(request.email)
+        .bind(&request.name)
+        .bind(&request.email)
         .bind(password_hash)
         .fetch_one(&state.pool)
         .await?;
@@ -95,16 +90,13 @@ pub async fn create(
 }
 
 /// Route that logs in a user.
-pub async fn login(
-    State(state): State<AppState>,
-    Json(request): Json<LoginRequest>,
-) -> Result<String, AppError> {
+pub async fn login(state: State<AppState>, request: Json<LoginRequest>) -> Result<String, AppError> {
     
     // Fetches details of user matching either the email or username.
-    let result: Option<(i32, String, String, Role, String)> = match (request.email, request.name) {
+    let result: Option<(i32, String, String, Role, String)> = match (&request.email, &request.name) {
         (_, Some(name))     => sqlx::query_as("SELECT id, email, name, role, password FROM account WHERE name=$1").bind(name).fetch_optional(&state.pool).await?,
         (Some(email), _)    => sqlx::query_as("SELECT id, email, name, role, password FROM account WHERE email=$1").bind(email).fetch_optional(&state.pool).await?,
-        (None, None)        => return Err(AppError::EmailOrUsernameRequired),
+        (None, None)        => return Err(AppError::MissingEmailOrUsername),
     };
     let Some((id, email, name, role, password)) = result else {
         return Err(AppError::NoMatchingUser);
@@ -123,7 +115,28 @@ pub async fn login(
     Ok(claims_str)
 }
 
-/// Middleware function to authenticate users.
+/// Utility function that creates a root account if it does not yet exist.
+pub async fn create_root_account(name: String, email: String, password: String, pool: &PgPool) -> Result<(), anyhow::Error> {
+
+    // Quits if root account already exists.
+    let root_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM account WHERE role='root'").fetch_one(pool).await?;
+    if root_count.0 != 0 {
+        return Ok(());
+    }
+
+    // Creates root account.
+    let password_hash = generate_password_hash(password).await?;
+    sqlx::query("INSERT INTO account (name, email, password, role) VALUES ($1, $2, $3, 'root')")
+        .bind(name)
+        .bind(email)
+        .bind(password_hash)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Middleware function that authenticates users.
+/// Attaches a [`Claims`] extension.
 pub async fn authenticate<B>(state: State<AppState>, mut request: Request<B>, next: Next<B>) -> Response {
     let Some(authorization) = request.headers().get(header::AUTHORIZATION) else {
         return AppError::MissingAuthHeader.into_response();
@@ -143,35 +156,6 @@ pub async fn authenticate<B>(state: State<AppState>, mut request: Request<B>, ne
     request.extensions_mut().insert(claims);
     next.run(request).await
 }
-
-/// Utility function that creates a root account if it does not yet exist.
-pub async fn create_root_account(
-    name: String,
-    email: String,
-    password: String,
-    pool: &PgPool
-) -> Result<(), anyhow::Error> {
-
-    // Quits if root account already exists
-    let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM account WHERE role='root'").fetch_one(pool).await?;
-    let root_account_exists = row.0 != 0;
-    if root_account_exists {
-        return Ok(());
-    }
-
-    // Hashes + salts password
-    let password_hash = generate_password_hash(password.into()).await?;
-
-    // Creates root account
-    sqlx::query("INSERT INTO account (name, email, password, role) VALUES ($1, $2, $3, 'root')")
-        .bind(name)
-        .bind(email)
-        .bind(password_hash)
-        .execute(pool)
-        .await?;
-    Ok(())
-}
-
 
 async fn generate_password_hash(password: String) -> Result<String, AppError> {
     task::spawn_blocking(move || {
@@ -196,8 +180,8 @@ async fn verify_password(password: String, existing_password: String) -> scrypt:
 }
 
 fn skip_bearer(auth_token: &str) -> Result<&str, AppError> {
-    if auth_token.starts_with("Bearer ") {
-        return Ok(auth_token[7..].trim())
+    if !auth_token.starts_with("Bearer ") {
+        return Err(AppError::Unauthorized);
     }
-    return Err(AppError::Unauthorized)
+    Ok(auth_token[7..].trim())
 }

@@ -3,6 +3,7 @@ pub mod account;
 pub mod migrate;
 pub mod app;
 pub mod thing;
-pub mod store;
+pub mod category;
+pub mod file_store;
 
 use app::*;
