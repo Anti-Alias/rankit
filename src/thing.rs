@@ -1,22 +1,37 @@
 use std::io::Cursor;
-use axum::{extract::{State, Multipart, Extension, Path}, body::Bytes, Json};
+use axum::{extract::{State, Multipart, Path, Query}, body::Bytes, Json};
 use serde::{Serialize, Deserialize};
 use image::{io::Reader as ImageReader, ImageError, GenericImageView, imageops::FilterType, codecs::jpeg::JpegEncoder};
-use sqlx::{FromRow, Acquire};
-use crate::{AppState, JsonResult, account::Claims, AppError};
+use sqlx::{FromRow, Acquire, QueryBuilder};
+use derive_more::Display;
+use crate::{AppState, JsonResult, AppError};
 
-/// Request to create a "thing".
+const LIMIT_DEFAULT: u32 = 100;
+const LIMIT_MAX: u32 = 100;
+
+/// Request to create a [`Thing`].
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
-pub struct CreateThingRequest {
+pub struct CreateRequest {
     pub name: String,
 }
 
 /// Response to a [`CreateThingRequest`].
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
-pub struct CreateThingResponse {
-    pub thing: Thing
+pub struct CreateResponse {
+    pub thing: Thing,
 }
 
+pub struct ListResponse {
+    pub data: Vec<Thing>,
+    pub meta: Meta
+}
+
+pub struct Meta {
+    pub cursor: String,
+
+}
+
+/// Thing :)
 #[derive(Serialize, Deserialize, FromRow, Clone, Eq, PartialEq, Debug)]
 pub struct Thing {
     pub id: i32,
@@ -24,7 +39,19 @@ pub struct Thing {
     pub file: String,
 }
 
-pub async fn create(state: State<AppState>, claims: Extension<Claims>, mut multipart: Multipart) -> JsonResult<CreateThingResponse> {
+/// Query parameters listing things.
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
+pub struct ThingQuery {
+    pub order: Option<Order>,
+    pub desc: Option<bool>,
+    pub limit: Option<u32>
+}
+
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
+#[serde(rename_all = "lowercase")]
+pub enum Order { Name, Created }
+
+pub async fn create(state: State<AppState>, mut multipart: Multipart) -> JsonResult<CreateResponse> {
 
     // Separates "image" and "request" parts.
     let mut image_bytes: Option<Bytes> = None;
@@ -51,7 +78,7 @@ pub async fn create(state: State<AppState>, claims: Extension<Claims>, mut multi
             return Err(AppError::BadRequest);
         },
     };
-    let request: CreateThingRequest = match serde_json::from_str(&request_str) {
+    let request: CreateRequest = match serde_json::from_str(&request_str) {
         Ok(value) => value,
         Err(err) => {
             log::error!("Failed to parse request json: {err}");
@@ -63,9 +90,8 @@ pub async fn create(state: State<AppState>, claims: Extension<Claims>, mut multi
     }
 
     // Checks for duplicate thing.
-    let thing_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM thing WHERE name=$1 and account_id=$2")
+    let thing_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM thing WHERE name=$1")
         .bind(&request.name)
-        .bind(claims.id)
         .fetch_one(&state.pool)
         .await?;
     if thing_count.0 != 0 {
@@ -73,13 +99,12 @@ pub async fn create(state: State<AppState>, claims: Extension<Claims>, mut multi
     }
 
     let file_name = format!("{}.jpg", &request.name);
-    let file_path = format!("account/{}/thing/{}", claims.id, &file_name);
+    let file_path = format!("thing/{}", &file_name);
 
     // Saves image to DB and file store.
     let mut tx = state.pool.begin().await?;
     let conn = tx.acquire().await?;
-    let thing: Thing = sqlx::query_as("INSERT INTO thing (account_id, name, file) VALUES ($1, $2, $3) RETURNING id, name, file")
-        .bind(claims.id)
+    let thing: Thing = sqlx::query_as("INSERT INTO thing (name, file) VALUES ($1, $2) RETURNING id, name, file")
         .bind(request.name)
         .bind(&file_path)
         .fetch_one(conn)
@@ -88,12 +113,12 @@ pub async fn create(state: State<AppState>, claims: Extension<Claims>, mut multi
     tx.commit().await?;
 
     // Done
-    let response = CreateThingResponse { thing };
+    let response = CreateResponse { thing };
     Ok(Json(response))
 }
 
 pub async fn single(state: State<AppState>, path: Path<i32>) -> JsonResult<Thing> {
-    let thing: Option<Thing> = sqlx::query_as("SELECT id, account_id, name, file FROM thing WHERE id = $1")
+    let thing: Option<Thing> = sqlx::query_as("SELECT id, name, file FROM thing WHERE id = $1")
         .bind(path.0)
         .fetch_optional(&state.pool)
         .await?;
@@ -103,10 +128,20 @@ pub async fn single(state: State<AppState>, path: Path<i32>) -> JsonResult<Thing
     Ok(Json(thing))
 }
 
-/// Lists all things under this account.
-pub async fn list(state: State<AppState>, claims: Extension<Claims>) -> JsonResult<Vec<Thing>> {
-    let things: Vec<Thing> = sqlx::query_as("SELECT id, account_id, name, file FROM thing WHERE account_id = $1")
-        .bind(claims.id)
+/// Pagenated list of all things.
+pub async fn list(state: State<AppState>, query: Query<ThingQuery>) -> JsonResult<Vec<Thing>> {
+    let query = query.0;
+    let mut builder = QueryBuilder::new("SELECT id, name, file FROM thing");
+    if let Some(order) = query.order {
+        builder.push(" ORDER BY ").push(order);
+    }
+    if Some(true) == query.desc {
+        builder.push(" DESC");
+    }
+    let limit = query.limit.unwrap_or(LIMIT_DEFAULT).min(LIMIT_MAX);
+    builder.push(" LIMIT ").push_bind(limit as i32);
+    println!("Query: {}", builder.sql());
+    let things: Vec<Thing> = builder.build_query_as()
         .fetch_all(&state.pool)
         .await?;
     Ok(Json(things))

@@ -11,20 +11,20 @@ use derive_more::{Error, Display, From};
 use jsonwebtoken::{EncodingKey, DecodingKey};
 use regex::Regex;
 use sqlx::{postgres::PgPoolOptions, PgPool};
-use crate::file_store::{DynFileStore, FilesystemFileStore, FileStoreError};
 use crate::{account, thing, env, category};
+use crate::file_store::{DynFileStore, FilesystemFileStore, FileStoreError};
+
 
 /// Creates application router.
 pub async fn create_app(state: AppState) -> Result<Router, anyhow::Error> {
     let authenticate = from_fn_with_state(state.clone(), account::authenticate);
     let router = Router::new()
-        .route("/account/category",     post(category::create))
-        .route("/account/categories",   get(category::list))
-        .route("/account/thing",        post(thing::create))
-        .route("/account/things",       get(thing::list))
+        .route("/category",             post(category::create))
+        .route("/thing",                post(thing::create))
         .layer(authenticate)            // Above require authentication
         .route("/account",              post(account::create))
         .route("/account/login",        post(account::login))
+        .route("/things",               get(thing::list))
         .route("/thing/:id",            get(thing::single))
         .route("/category/:id",         get(category::single))
         .with_state(state);
@@ -47,10 +47,7 @@ impl AppState {
         let claims_duration = Duration::from_secs(claims_duration);
         let claims_secret: String = read_var(env::APP_CLAIMS_DURATION)?;
         let claims_secret = claims_secret.as_bytes();
-        let pool = PgPoolOptions::new()
-            .max_connections(32)
-            .connect(&pg_str)
-            .await?;
+        let pool = PgPoolOptions::new().max_connections(32).connect(&pg_str).await?;
         let state = AppStateInner {
             file_store,
             claims_duration,
