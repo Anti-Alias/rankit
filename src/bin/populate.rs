@@ -15,7 +15,7 @@ async fn main() {
     dotenvy::dotenv().unwrap();
     env_logger::init();
 
-    println!("Starting APP");
+    println!("___Starting APP___");
     let app = app::create_app_from_env(true).await.unwrap();
     let client = TestClient::new(app);
     let root_name: String = read_var(env::APP_ROOT_ACCOUNT_NAME).unwrap();
