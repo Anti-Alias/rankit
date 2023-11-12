@@ -1,4 +1,5 @@
 use axum::{Json, extract::{State, Path}};
+use axum::http::StatusCode;
 use serde::{Serialize, Deserialize};
 use sqlx::FromRow;
 use crate::{app::JsonResult, AppState, AppError};
@@ -12,18 +13,18 @@ pub struct Category {
 
 /// Request to create a [`Category`].
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
-pub struct CreateCategoryRequest {
+pub struct CreateRequest {
     pub name: String,
 }
 
 /// Response to creating a [`Category`].
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
-pub struct CreateCategoryResponse {
+pub struct CreateResponse {
     pub category: Category
 }
 
 /// Creates a category.
-pub async fn create(state: State<AppState>, request: Json<CreateCategoryRequest>) -> JsonResult<CreateCategoryResponse> {
+pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> JsonResult<CreateResponse> {
 
     // Checks for duplicate
     let category_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM category WHERE name=$1")
@@ -31,7 +32,7 @@ pub async fn create(state: State<AppState>, request: Json<CreateCategoryRequest>
         .fetch_one(&state.pool)
         .await?;
     if category_count.0 != 0 {
-        return Err(AppError::DuplicateCategory);
+        return Err(AppError::DuplicateRecord);
     }
 
     // Inserts new category
@@ -40,8 +41,8 @@ pub async fn create(state: State<AppState>, request: Json<CreateCategoryRequest>
         .bind(&request_name)
         .fetch_one(&state.pool)
         .await?;
-    let response = CreateCategoryResponse { category };
-    Ok(Json(response))
+    let response = CreateResponse { category };
+    Ok((StatusCode::CREATED, Json(response)))
 }
 
 /// Gets a single category.
@@ -53,5 +54,13 @@ pub async fn single(state: State<AppState>, path: Path<i32>) -> JsonResult<Categ
     let Some(category) = category else {
         return Err(AppError::RecordNotFound);
     };
-    Ok(Json(category))
+    Ok((StatusCode::OK, Json(category)))
+}
+
+/// Gets a single category.
+pub async fn list(state: State<AppState>) -> JsonResult<Vec<Category>> {
+    let categories: Vec<Category> = sqlx::query_as("SELECT id, name FROM category")
+        .fetch_all(&state.pool)
+        .await?;
+    Ok((StatusCode::OK, Json(categories)))
 }

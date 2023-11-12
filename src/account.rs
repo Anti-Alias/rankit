@@ -2,6 +2,7 @@ use jsonwebtoken::{encode, decode, Header, Validation};
 use axum::{Json, extract::State, middleware::Next};
 use axum::response::{Response, IntoResponse};
 use axum::http::{header, Request};
+use reqwest::StatusCode;
 use std::time::Duration;
 use chrono::Utc;
 use scrypt::{password_hash::{rand_core::OsRng, SaltString, PasswordHasher, PasswordHash, PasswordVerifier}, Scrypt};
@@ -55,7 +56,7 @@ pub struct CreateAccountResponse {
 }
 
 /// Request to login to an existing account.
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct LoginRequest {
     pub name: Option<String>,
     pub email: Option<String>,
@@ -64,7 +65,6 @@ pub struct LoginRequest {
 
 /// Route that creates an account.
 pub async fn create(state: State<AppState>, request: Json<CreateAccountRequest>) -> JsonResult<CreateAccountResponse> {
-
     let state = state.0;
     let request = request.0;
     
@@ -75,18 +75,19 @@ pub async fn create(state: State<AppState>, request: Json<CreateAccountRequest>)
         .fetch_one(&state.pool)
         .await?;
     if account_count.0 != 0 {
-        return Err(AppError::DuplicateAccount);
+        return Err(AppError::DuplicateRecord);
     }
 
     // Inserts new account and returns response.
     let password_hash = generate_password_hash(request.password).await?;
-    let response = sqlx::query_as("INSERT INTO account (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email")
+    let resp_body = sqlx::query_as("INSERT INTO account (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email")
         .bind(&request.name)
         .bind(&request.email)
         .bind(password_hash)
         .fetch_one(&state.pool)
         .await?;
-    Ok(Json(response))
+    let resp_body = Json(resp_body);
+    Ok((StatusCode::CREATED, resp_body))
 }
 
 /// Route that logs in a user.
@@ -116,12 +117,12 @@ pub async fn login(state: State<AppState>, request: Json<LoginRequest>) -> Resul
 }
 
 /// Utility function that creates a root account if it does not yet exist.
-pub async fn create_root_account(name: String, email: String, password: String, pool: &PgPool) -> Result<(), anyhow::Error> {
+pub async fn create_root_account(name: String, email: String, password: String, pool: &PgPool) -> Result<StatusCode, anyhow::Error> {
 
     // Quits if root account already exists.
     let root_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM account WHERE role='root'").fetch_one(pool).await?;
     if root_count.0 != 0 {
-        return Ok(());
+        return Ok(StatusCode::NO_CONTENT);
     }
 
     // Creates root account.
@@ -132,7 +133,7 @@ pub async fn create_root_account(name: String, email: String, password: String, 
         .bind(password_hash)
         .execute(pool)
         .await?;
-    Ok(())
+    Ok(StatusCode::CREATED)
 }
 
 /// Middleware function that authenticates users.

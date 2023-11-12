@@ -1,5 +1,5 @@
 use std::io::Cursor;
-use axum::{extract::{State, Multipart, Path, Query}, body::Bytes, Json};
+use axum::{extract::{State, Multipart, Path, Query}, body::Bytes, Json, http::StatusCode};
 use serde::{Serialize, Deserialize};
 use image::{io::Reader as ImageReader, ImageError, GenericImageView, imageops::FilterType, codecs::jpeg::JpegEncoder};
 use sqlx::{FromRow, Acquire, QueryBuilder};
@@ -41,7 +41,7 @@ pub struct Thing {
 
 /// Query parameters listing things.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
-pub struct ThingQuery {
+pub struct QueryParams {
     pub order: Option<Order>,
     pub desc: Option<bool>,
     pub limit: Option<u32>
@@ -52,7 +52,6 @@ pub struct ThingQuery {
 pub enum Order { Name, Created }
 
 pub async fn create(state: State<AppState>, mut multipart: Multipart) -> JsonResult<CreateResponse> {
-
     // Separates "image" and "request" parts.
     let mut image_bytes: Option<Bytes> = None;
     let mut request_str: Option<String> = None;
@@ -95,7 +94,7 @@ pub async fn create(state: State<AppState>, mut multipart: Multipart) -> JsonRes
         .fetch_one(&state.pool)
         .await?;
     if thing_count.0 != 0 {
-        return Err(AppError::DuplicateThing);
+        return Err(AppError::DuplicateRecord);
     }
 
     let file_name = format!("{}.jpg", &request.name);
@@ -113,8 +112,7 @@ pub async fn create(state: State<AppState>, mut multipart: Multipart) -> JsonRes
     tx.commit().await?;
 
     // Done
-    let response = CreateResponse { thing };
-    Ok(Json(response))
+    Ok((StatusCode::CREATED, Json(CreateResponse { thing })))
 }
 
 pub async fn single(state: State<AppState>, path: Path<i32>) -> JsonResult<Thing> {
@@ -125,11 +123,11 @@ pub async fn single(state: State<AppState>, path: Path<i32>) -> JsonResult<Thing
     let Some(thing) = thing else {
         return Err(AppError::RecordNotFound);
     };
-    Ok(Json(thing))
+    Ok((StatusCode::OK, Json(thing)))
 }
 
-/// Pagenated list of all things.
-pub async fn list(state: State<AppState>, query: Query<ThingQuery>) -> JsonResult<Vec<Thing>> {
+/// Paginated list of all things.
+pub async fn list(state: State<AppState>, query: Query<QueryParams>) -> JsonResult<Vec<Thing>> {
     let query = query.0;
     let mut builder = QueryBuilder::new("SELECT id, name, file FROM thing");
     if let Some(order) = query.order {
@@ -140,11 +138,10 @@ pub async fn list(state: State<AppState>, query: Query<ThingQuery>) -> JsonResul
     }
     let limit = query.limit.unwrap_or(LIMIT_DEFAULT).min(LIMIT_MAX);
     builder.push(" LIMIT ").push_bind(limit as i32);
-    println!("Query: {}", builder.sql());
     let things: Vec<Thing> = builder.build_query_as()
         .fetch_all(&state.pool)
         .await?;
-    Ok(Json(things))
+    Ok((StatusCode::OK, Json(things)))
 }
 
 // Reads in image bytes, resizes it if too large,

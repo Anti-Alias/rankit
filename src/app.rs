@@ -11,28 +11,47 @@ use derive_more::{Error, Display, From};
 use jsonwebtoken::{EncodingKey, DecodingKey};
 use regex::Regex;
 use sqlx::{postgres::PgPoolOptions, PgPool};
-use crate::{account, thing, env, category};
-use crate::file_store::{DynFileStore, FilesystemFileStore, FileStoreError};
+use crate::account::create_root_account;
+use crate::{account, thing, env, category, rank, migrate};
+use crate::file_store::{DynFileStore, FileStoreError};
 
 
 /// Creates application router.
-pub async fn create_app(state: AppState) -> Result<Router, anyhow::Error> {
+pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error> {
+
+    // Migrates DB if requested
+    if migrate {
+        migrate::migrate().await?;
+    }
+    
+    // Creates shared state
+    let state = AppState::from_env().await?;
+    create_root_account(
+        read_var(env::APP_ROOT_ACCOUNT_NAME)?,
+        read_var(env::APP_ROOT_ACCOUNT_EMAIL)?,
+        read_var(env::APP_ROOT_ACCOUNT_PASSWORD)?,
+        &state.pool
+    ).await?;
+
+    // Builds app
     let authenticate = from_fn_with_state(state.clone(), account::authenticate);
     let router = Router::new()
-        .route("/category",             post(category::create))
-        .route("/thing",                post(thing::create))
-        .layer(authenticate)            // Above require authentication
-        .route("/account",              post(account::create))
-        .route("/account/login",        post(account::login))
-        .route("/things",               get(thing::list))
-        .route("/thing/:id",            get(thing::single))
-        .route("/category/:id",         get(category::single))
+        .route("/thing",                post(thing::create))    // Creates a new Thing
+        .route("/category",             post(category::create)) // Creates a new Category
+        .route("/rank",                 post(rank::create))     // Creates a new Rank for a Thing in a Category
+        .layer(authenticate)                                    // ---------- Above require authentication ----------
+        .route("/account",              post(account::create))  // Creates a new account
+        .route("/account/login",        post(account::login))   // Logs in an account and return a Claims JWT
+        .route("/thing/:id",            get(thing::single))     // Gets a single Thing
+        .route("/things",               get(thing::list))       // Gets all Things
+        .route("/category/:id",         get(category::single))  // Gets a single Category
+        .route("/categories",           get(category::list))    // Gets all Categories
         .with_state(state);
     Ok(router)
 }
 
 /// Type alias for all app responses.
-pub type JsonResult<T> = Result<Json<T>, AppError>;
+pub type JsonResult<T> = Result<(StatusCode, Json<T>), AppError>;
 
 /// Shared resources used by application.
 #[derive(Clone, Deref, DerefMut)]
@@ -41,7 +60,7 @@ pub struct AppState(Arc<AppStateInner>);
 impl AppState {
     pub async fn from_env() -> Result<Self, StartupError> {
         log::info!("Connecting to DB");
-        let file_store = DynFileStore::new(FilesystemFileStore::new("files"));
+        let file_store = DynFileStore::filesystem("files");
         let pg_str: String = read_var(env::APP_DB)?;
         let claims_duration: u64 = read_var(env::APP_CLAIMS_DURATION)?;
         let claims_duration = Duration::from_secs(claims_duration);
@@ -100,9 +119,7 @@ pub enum AppError {
     ClaimsError(jsonwebtoken::errors::Error),
     Unauthorized,
     RecordNotFound,
-    DuplicateThing,
-    DuplicateCategory,
-    DuplicateAccount,
+    DuplicateRecord,
     MultipartError(axum::extract::multipart::MultipartError),
     SqlxError(sqlx::Error),
     PasswordHashError(scrypt::password_hash::Error),
@@ -130,9 +147,7 @@ impl IntoResponse for AppError {
             AppError::RecordNotFound                => (StatusCode::NOT_FOUND,      "Record not found").into_response(),
 
             // 409 (Conflict)
-            AppError::DuplicateThing                => (StatusCode::CONFLICT,       "Duplicate thing").into_response(),
-            AppError::DuplicateCategory             => (StatusCode::CONFLICT,       "Duplicate category").into_response(),
-            AppError::DuplicateAccount              => (StatusCode::CONFLICT,       "Duplicate account").into_response(),
+            AppError::DuplicateRecord                => (StatusCode::CONFLICT,       "Duplicate record").into_response(),
 
             // 500 (Internal server error)
             AppError::MultipartError(error) => {
