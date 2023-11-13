@@ -27,7 +27,7 @@ pub struct CreateResponse {
 pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> JsonResult<CreateResponse> {
 
     // Checks for duplicate
-    let category_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM category WHERE name=$1")
+    let category_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM category WHERE name=$1 AND deleted IS NULL")
         .bind(&request.name)
         .fetch_one(&state.pool)
         .await?;
@@ -52,7 +52,7 @@ pub async fn single(state: State<AppState>, path: Path<i32>) -> JsonResult<Categ
         .fetch_optional(&state.pool)
         .await?;
     let Some(category) = category else {
-        return Err(AppError::RecordNotFound);
+        return Err(AppError::CategoryNotFound);
     };
     Ok((StatusCode::OK, Json(category)))
 }

@@ -3,10 +3,24 @@ use axum::http::StatusCode;
 use serde::{Serialize, Deserialize};
 use sqlx::FromRow;
 use tokio::try_join;
+use crate::thing;
 use crate::app::{AppState, JsonResult, AppError};
-use rand::prelude::*;
 
 const SCORE_INITIAL: i32 = 1200;
+const DRAW_TWO_QUERY: &str = "\
+    SELECT t.id, t.name, t.file, r.score, r.run \
+    FROM \
+        thing t \
+        JOIN rank r ON t.id = r.thing_id \
+        JOIN category c ON r.category_id = c.id \
+    WHERE \
+        r.category_id = $1 AND \
+        t.deleted IS NULL AND \
+        c.deleted IS NULL \
+    ORDER BY \
+        r.run, r.shuffle \
+    LIMIT 2\
+";
 
 /// Associates a [`Thing`](crate::thing::Thing), within a [`Category`](crate::category::Category),
 /// and gives it a [`Rank`] within that [`Category`](crate::category::Category).
@@ -16,8 +30,6 @@ pub struct Rank {
     pub thing_id: i32,
     pub category_id: i32,
     pub score: i32,
-    pub run: i32,
-    pub shuffle: i32
 }
 
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
@@ -29,6 +41,13 @@ pub struct CreateRequest {
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
 pub struct CreateResponse {
     pub rank: Rank
+}
+
+#[derive(Serialize, Deserialize, FromRow, Clone, Eq, PartialEq, Debug)]
+pub struct RankedThing {
+    pub thing: thing::Thing,
+    pub score: i32,
+    pub run: i32
 }
 
 /// Associates a [`Thing`](crate::thing::Thing) to a [`Category`](crate::category::Category)
@@ -51,16 +70,47 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
 
     // Generates and inserts a new rank.
     // "Thing" will be "comparable" in the next "run".
-    let shuffle: i32 = thread_rng().gen();
-    let rank: Rank = sqlx::query_as("INSERT INTO rank (thing_id, category_id, score, run, shuffle) VALUES ($1,$2,$3,$4,$5) RETURNING thing_id, category_id, score, run, shuffle")
+    let rank: Rank = sqlx::query_as("INSERT INTO rank (thing_id, category_id, score, run) VALUES ($1,$2,$3,$4) RETURNING thing_id, category_id, score")
         .bind(request.thing_id)
         .bind(request.category_id)
         .bind(SCORE_INITIAL)
-        .bind(current_run + 1)
-        .bind(shuffle)
+        .bind(current_run)
         .fetch_one(&state.pool)
         .await?;
     Ok((StatusCode::CREATED, Json(CreateResponse { rank })))
+}
+
+pub async fn draw_two_things(state: &State<AppState>, category_id: i32) -> Result<(RankedThing, RankedThing), AppError> {
+    
+    log::info!("Drawing two 'things' in the 'category' {}", category_id);
+    let (thing_a, thing_b) = {
+        let scored_things: Vec<(i32, String, String, i32, i32)> = sqlx::query_as(DRAW_TWO_QUERY)
+            .bind(category_id)
+            .fetch_all(&state.pool)
+            .await?;
+        if scored_things.len() != 2 {
+            return Err(AppError::NotEnoughThings);
+        }
+        let mut things = scored_things.into_iter().map(|row| RankedThing {
+            thing: thing::Thing { id: row.0, name: row.1, file: row.2 },
+            score: row.3,
+            run: row.4
+        });
+        (things.next().unwrap(), things.next().unwrap())
+    };
+
+    log::info!("Discarding things {} and {} for the next run", thing_a.thing.id, thing_b.thing.id);
+    let next_run = thing_a.run.max(thing_b.run) + 1;
+    sqlx::query("UPDATE rank SET run=$1, shuffle=RANDOM() WHERE thing_id IN ($2,$3) AND category_id=$4")
+        .bind(next_run)
+        .bind(thing_a.thing.id)
+        .bind(thing_b.thing.id)
+        .bind(category_id)
+        .execute(&state.pool)
+        .await?;
+
+    // Done
+    Ok((thing_a, thing_b))
 }
 
 async fn get_current_run(state: &State<AppState>, category_id: i32) -> Result<i32, sqlx::Error> {

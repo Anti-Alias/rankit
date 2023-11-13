@@ -21,16 +21,6 @@ pub struct CreateResponse {
     pub thing: Thing,
 }
 
-pub struct ListResponse {
-    pub data: Vec<Thing>,
-    pub meta: Meta
-}
-
-pub struct Meta {
-    pub cursor: String,
-
-}
-
 /// Thing :)
 #[derive(Serialize, Deserialize, FromRow, Clone, Eq, PartialEq, Debug)]
 pub struct Thing {
@@ -52,6 +42,7 @@ pub struct QueryParams {
 pub enum Order { Name, Created }
 
 pub async fn create(state: State<AppState>, mut multipart: Multipart) -> JsonResult<CreateResponse> {
+    
     // Separates "image" and "request" parts.
     let mut image_bytes: Option<Bytes> = None;
     let mut request_str: Option<String> = None;
@@ -121,7 +112,7 @@ pub async fn single(state: State<AppState>, path: Path<i32>) -> JsonResult<Thing
         .fetch_optional(&state.pool)
         .await?;
     let Some(thing) = thing else {
-        return Err(AppError::RecordNotFound);
+        return Err(AppError::ThingNotFound);
     };
     Ok((StatusCode::OK, Json(thing)))
 }

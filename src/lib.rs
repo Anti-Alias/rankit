@@ -6,5 +6,6 @@ pub mod thing;
 pub mod category;
 pub mod file_store;
 pub mod rank;
+pub mod poll;
 
 use app::*;

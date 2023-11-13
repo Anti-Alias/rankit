@@ -4,7 +4,7 @@ use std::time::Duration;
 use derive_more::{Deref, DerefMut};
 use axum::Json;
 use axum::http::StatusCode;
-use axum::routing::{Router, post, get};
+use axum::routing::{Router, post, get, put};
 use axum::response::{Response, IntoResponse};
 use axum::middleware::from_fn_with_state;
 use derive_more::{Error, Display, From};
@@ -12,7 +12,7 @@ use jsonwebtoken::{EncodingKey, DecodingKey};
 use regex::Regex;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use crate::account::create_root_account;
-use crate::{account, thing, env, category, rank, migrate};
+use crate::{account, thing, env, category, rank, poll, migrate};
 use crate::file_store::{DynFileStore, FileStoreError};
 
 
@@ -39,6 +39,7 @@ pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error>
         .route("/thing",                post(thing::create))    // Creates a new Thing
         .route("/category",             post(category::create)) // Creates a new Category
         .route("/rank",                 post(rank::create))     // Creates a new Rank for a Thing in a Category
+        .route("/poll",                 put(poll::start))       // Creates or updates the polling state for the current user
         .layer(authenticate)                                    // ---------- Above require authentication ----------
         .route("/account",              post(account::create))  // Creates a new account
         .route("/account/login",        post(account::login))   // Logs in an account and return a Claims JWT
@@ -118,8 +119,10 @@ pub enum AppError {
     InvalidAuthToken,
     ClaimsError(jsonwebtoken::errors::Error),
     Unauthorized,
-    RecordNotFound,
+    CategoryNotFound,
+    ThingNotFound,
     DuplicateRecord,
+    NotEnoughThings,
     MultipartError(axum::extract::multipart::MultipartError),
     SqlxError(sqlx::Error),
     PasswordHashError(scrypt::password_hash::Error),
@@ -144,10 +147,12 @@ impl IntoResponse for AppError {
             AppError::Unauthorized                  => (StatusCode::UNAUTHORIZED,   "Unauthorized").into_response(),
 
             // 404 (Not found)
-            AppError::RecordNotFound                => (StatusCode::NOT_FOUND,      "Record not found").into_response(),
+            AppError::CategoryNotFound              => (StatusCode::NOT_FOUND,      "Category not found").into_response(),
+            AppError::ThingNotFound                => (StatusCode::NOT_FOUND,      "Thing not found").into_response(),
 
             // 409 (Conflict)
-            AppError::DuplicateRecord                => (StatusCode::CONFLICT,       "Duplicate record").into_response(),
+            AppError::DuplicateRecord               => (StatusCode::CONFLICT,      "Duplicate record").into_response(),
+            AppError::NotEnoughThings               => (StatusCode::CONFLICT,      "Not enough things in category to compare").into_response(),
 
             // 500 (Internal server error)
             AppError::MultipartError(error) => {

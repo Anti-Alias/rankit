@@ -11,14 +11,14 @@ CREATE TABLE account (
 
 CREATE TABLE thing (
     id          serial PRIMARY KEY,
-    name        text NOT NULL UNIQUE,
+    name        text NOT NULL,
     file        text NOT NULL,
     deleted     timestamptz
 );
 
 CREATE TABLE category (
     id          serial PRIMARY KEY,
-    name        text NOT NULL UNIQUE,
+    name        text NOT NULL,
     deleted     timestamptz
 );
 
@@ -27,7 +27,14 @@ CREATE TABLE rank(
     category_id     integer NOT NULL REFERENCES category(id),
     score           integer NOT NULL DEFAULT 0,
     run             integer NOT NULL,
-    shuffle         integer NOT NULL
+    shuffle         real NOT NULL DEFAULT RANDOM()
+);
+
+CREATE TABLE poll (
+    account_id      integer NOT NULL REFERENCES account(id) UNIQUE,
+    category_id     integer NOT NULL REFERENCES category(id),
+    thing_id_a      integer NOT NULL REFERENCES thing(id),
+    thing_id_b      integer NOT NULL REFERENCES thing(id)
 );
 
 CREATE INDEX ON account(name);
