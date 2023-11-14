@@ -39,7 +39,8 @@ pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error>
         .route("/thing",                post(thing::create))    // Creates a new Thing
         .route("/category",             post(category::create)) // Creates a new Category
         .route("/rank",                 post(rank::create))     // Creates a new Rank for a Thing in a Category
-        .route("/poll",                 put(poll::start))       // Creates or updates the polling state for the current user
+        .route("/poll/start",           put(poll::start))       // Puts current user into a "polling state" for a particular category.
+        .route("/poll/finish",          put(poll::finish))      // Takes current user out of "polling state" by having them submit an answer.
         .layer(authenticate)                                    // ---------- Above require authentication ----------
         .route("/account",              post(account::create))  // Creates a new account
         .route("/account/login",        post(account::login))   // Logs in an account and return a Claims JWT
@@ -121,8 +122,10 @@ pub enum AppError {
     Unauthorized,
     CategoryNotFound,
     ThingNotFound,
+    ThingOrCategoryNotFound,
     DuplicateRecord,
     NotEnoughThings,
+    NotInPollingState,
     MultipartError(axum::extract::multipart::MultipartError),
     SqlxError(sqlx::Error),
     PasswordHashError(scrypt::password_hash::Error),
@@ -148,11 +151,13 @@ impl IntoResponse for AppError {
 
             // 404 (Not found)
             AppError::CategoryNotFound              => (StatusCode::NOT_FOUND,      "Category not found").into_response(),
-            AppError::ThingNotFound                => (StatusCode::NOT_FOUND,      "Thing not found").into_response(),
+            AppError::ThingNotFound                 => (StatusCode::NOT_FOUND,      "Thing not found").into_response(),
+            AppError::ThingOrCategoryNotFound       => (StatusCode::NOT_FOUND,      "Thing or category not found").into_response(),
 
             // 409 (Conflict)
             AppError::DuplicateRecord               => (StatusCode::CONFLICT,      "Duplicate record").into_response(),
             AppError::NotEnoughThings               => (StatusCode::CONFLICT,      "Not enough things in category to compare").into_response(),
+            AppError::NotInPollingState             => (StatusCode::CONFLICT,      "Account not in a polling state").into_response(),
 
             // 500 (Internal server error)
             AppError::MultipartError(error) => {

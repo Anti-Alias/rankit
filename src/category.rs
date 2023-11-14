@@ -47,7 +47,7 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
 
 /// Gets a single category.
 pub async fn single(state: State<AppState>, path: Path<i32>) -> JsonResult<Category> {
-    let category: Option<Category> = sqlx::query_as("SELECT id, name FROM category WHERE id=$1")
+    let category: Option<Category> = sqlx::query_as("SELECT id, name FROM category WHERE id=$1 AND deleted IS NULL")
         .bind(path.0)
         .fetch_optional(&state.pool)
         .await?;
@@ -59,7 +59,7 @@ pub async fn single(state: State<AppState>, path: Path<i32>) -> JsonResult<Categ
 
 /// Gets a single category.
 pub async fn list(state: State<AppState>) -> JsonResult<Vec<Category>> {
-    let categories: Vec<Category> = sqlx::query_as("SELECT id, name FROM category")
+    let categories: Vec<Category> = sqlx::query_as("SELECT id, name FROM category WHERE deleted IS NULL")
         .fetch_all(&state.pool)
         .await?;
     Ok((StatusCode::OK, Json(categories)))

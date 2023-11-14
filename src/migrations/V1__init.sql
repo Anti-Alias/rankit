@@ -25,7 +25,7 @@ CREATE TABLE category (
 CREATE TABLE rank(
     thing_id        integer NOT NULL REFERENCES thing(id),
     category_id     integer NOT NULL REFERENCES category(id),
-    score           integer NOT NULL DEFAULT 0,
+    score           double precision NOT NULL DEFAULT 0.0,
     run             integer NOT NULL,
     shuffle         real NOT NULL DEFAULT RANDOM()
 );

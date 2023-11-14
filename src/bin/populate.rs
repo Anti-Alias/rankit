@@ -29,10 +29,14 @@ async fn main() {
     let rice_bytes = include_bytes!("images/rice.jpg");
     let oatmeal_bytes = include_bytes!("images/oatmeal.jpg");
     let steak_bytes = include_bytes!("images/steak.jpg");
+    let chicken_bytes = include_bytes!("images/chicken.jpg");
+    let pork_bytes = include_bytes!("images/pork.jpg");
     let apple_id = create_thing("apple", apple_bytes, &auth, &client).await;
     let rice_id = create_thing("rice", rice_bytes, &auth, &client).await;
     let oatmeal_id = create_thing("oatmeal", oatmeal_bytes, &auth, &client).await;
     let steak_id = create_thing("steak", steak_bytes, &auth, &client).await;
+    let chicken_id = create_thing("chicken", chicken_bytes, &auth, &client).await;
+    let pork_id = create_thing("pork", pork_bytes, &auth, &client).await;
 
     println!("___Creating categories___");
     let food_id = create_category("food", &auth, &client).await;
@@ -49,6 +53,10 @@ async fn main() {
     create_rank(oatmeal_id, grain_id, &auth, &client).await;
     create_rank(steak_id, food_id, &auth, &client).await;
     create_rank(steak_id, meat_id, &auth, &client).await;
+    create_rank(chicken_id, food_id, &auth, &client).await;
+    create_rank(chicken_id, meat_id, &auth, &client).await;
+    create_rank(pork_id, food_id, &auth, &client).await;
+    create_rank(pork_id, meat_id, &auth, &client).await;
 }
 
 async fn login(root_name: &str, root_pass: &str, client: &TestClient) -> String {

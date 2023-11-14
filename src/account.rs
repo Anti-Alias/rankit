@@ -69,7 +69,7 @@ pub async fn create(state: State<AppState>, request: Json<CreateAccountRequest>)
     let request = request.0;
     
     // Checks for duplicate accounts.
-    let account_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM account WHERE email=$1 OR name=$2")
+    let account_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM account WHERE email=$1 OR name=$2 AND deleted IS NULL")
         .bind(&request.email)
         .bind(&request.name)
         .fetch_one(&state.pool)
@@ -95,8 +95,8 @@ pub async fn login(state: State<AppState>, request: Json<LoginRequest>) -> Resul
     
     // Fetches details of user matching either the email or username.
     let result: Option<(i32, String, String, Role, String)> = match (&request.email, &request.name) {
-        (_, Some(name))     => sqlx::query_as("SELECT id, email, name, role, password FROM account WHERE name=$1").bind(name).fetch_optional(&state.pool).await?,
-        (Some(email), _)    => sqlx::query_as("SELECT id, email, name, role, password FROM account WHERE email=$1").bind(email).fetch_optional(&state.pool).await?,
+        (_, Some(name))     => sqlx::query_as("SELECT id, email, name, role, password FROM account WHERE name=$1 AND deleted IS NULL").bind(name).fetch_optional(&state.pool).await?,
+        (Some(email), _)    => sqlx::query_as("SELECT id, email, name, role, password FROM account WHERE email=$1 AND deleted IS NULL").bind(email).fetch_optional(&state.pool).await?,
         (None, None)        => return Err(AppError::MissingEmailOrUsername),
     };
     let Some((id, email, name, role, password)) = result else {
@@ -120,7 +120,7 @@ pub async fn login(state: State<AppState>, request: Json<LoginRequest>) -> Resul
 pub async fn create_root_account(name: String, email: String, password: String, pool: &PgPool) -> Result<StatusCode, anyhow::Error> {
 
     // Quits if root account already exists.
-    let root_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM account WHERE role='root'").fetch_one(pool).await?;
+    let root_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM account WHERE role='root' AND deleted IS NULL").fetch_one(pool).await?;
     if root_count.0 != 0 {
         return Ok(StatusCode::NO_CONTENT);
     }

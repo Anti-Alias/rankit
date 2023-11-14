@@ -88,19 +88,18 @@ pub async fn create(state: State<AppState>, mut multipart: Multipart) -> JsonRes
         return Err(AppError::DuplicateRecord);
     }
 
-    let file_name = format!("{}.jpg", &request.name);
-    let file_path = format!("thing/{}", &file_name);
 
     // Saves image to DB and file store.
-    let mut tx = state.pool.begin().await?;
-    let conn = tx.acquire().await?;
+    let file_path = format!("thing/{}.jpg", &request.name);
+    let mut transaction = state.pool.begin().await?;
+    let conn = transaction.acquire().await?;
     let thing: Thing = sqlx::query_as("INSERT INTO thing (name, file) VALUES ($1, $2) RETURNING id, name, file")
         .bind(request.name)
         .bind(&file_path)
         .fetch_one(conn)
         .await?;
     state.file_store.create(&file_path, &jpeg_bytes).await?;
-    tx.commit().await?;
+    transaction.commit().await?;
 
     // Done
     Ok((StatusCode::CREATED, Json(CreateResponse { thing })))

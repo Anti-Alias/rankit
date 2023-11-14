@@ -22,14 +22,23 @@ const DRAW_TWO_QUERY: &str = "\
     LIMIT 2\
 ";
 
+/// Used to verify that both a "thing" and a "category" exists.
+const THING_AND_CATEGORY_EXIST: &str = "\
+    SELECT EVERY(count = 1) FROM ( \
+        SELECT COUNT(*) FROM thing WHERE id=$1 AND deleted IS NULL \
+        UNION \
+        SELECT COUNT(*) FROM category WHERE id=$2 AND deleted is null \
+    )\
+";
+
 /// Associates a [`Thing`](crate::thing::Thing), within a [`Category`](crate::category::Category),
 /// and gives it a [`Rank`] within that [`Category`](crate::category::Category).
 /// Uses ELO rating system: https://en.wikipedia.org/wiki/Elo_rating_system
-#[derive(FromRow, Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone,  PartialEq, Debug)]
 pub struct Rank {
     pub thing_id: i32,
     pub category_id: i32,
-    pub score: i32,
+    pub score: f64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
@@ -38,16 +47,17 @@ pub struct CreateRequest {
     pub category_id: i32
 }
 
-#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct CreateResponse {
     pub rank: Rank
 }
 
-#[derive(Serialize, Deserialize, FromRow, Clone, Eq, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, FromRow, Clone, PartialEq, Debug)]
 pub struct RankedThing {
     pub thing: thing::Thing,
-    pub score: i32,
-    pub run: i32
+    pub score: f64,
+    #[serde(skip_serializing)]
+    pub run: i32,
 }
 
 /// Associates a [`Thing`](crate::thing::Thing) to a [`Category`](crate::category::Category)
@@ -55,8 +65,20 @@ pub struct RankedThing {
 /// Gives it an initial score.
 pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> JsonResult<CreateResponse> {
 
+    // Checks for the existance of the specified thing and category.
+    log::info!("Checking for existance of thing {} and category {}", request.thing_id, request.category_id);
+    let thing_and_cat_exist: (bool,) = sqlx::query_as(THING_AND_CATEGORY_EXIST)
+        .bind(request.thing_id)
+        .bind(request.category_id)
+        .fetch_one(&state.pool)
+        .await?;
+    if !thing_and_cat_exist.0 {
+        return Err(AppError::ThingOrCategoryNotFound);
+    }
+
     // Fetches existing rank state.
-    let current_run = get_current_run(&state, request.category_id);
+    log::info!("Checking for existing rank state");
+    let current_run = get_run_of_category(&state, request.category_id);
     let rank_count = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) from rank WHERE thing_id=$1 AND category_id=$2")
         .bind(request.thing_id)
         .bind(request.category_id)
@@ -84,7 +106,7 @@ pub async fn draw_two_things(state: &State<AppState>, category_id: i32) -> Resul
     
     log::info!("Drawing two 'things' in the 'category' {}", category_id);
     let (thing_a, thing_b) = {
-        let scored_things: Vec<(i32, String, String, i32, i32)> = sqlx::query_as(DRAW_TWO_QUERY)
+        let scored_things: Vec<(i32, String, String, f64, i32)> = sqlx::query_as(DRAW_TWO_QUERY)
             .bind(category_id)
             .fetch_all(&state.pool)
             .await?;
@@ -113,7 +135,7 @@ pub async fn draw_two_things(state: &State<AppState>, category_id: i32) -> Resul
     Ok((thing_a, thing_b))
 }
 
-async fn get_current_run(state: &State<AppState>, category_id: i32) -> Result<i32, sqlx::Error> {
+async fn get_run_of_category(state: &State<AppState>, category_id: i32) -> Result<i32, sqlx::Error> {
     let run: (i32,) = sqlx::query_as("SELECT run FROM rank WHERE category_id=$1 ORDER BY run, shuffle LIMIT 1")
         .bind(category_id)
         .fetch_optional(&state.pool)
