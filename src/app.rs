@@ -7,6 +7,7 @@ use axum::http::StatusCode;
 use axum::routing::{Router, post, get, put};
 use axum::response::{Response, IntoResponse};
 use axum::middleware;
+use tower_http::services::ServeDir;
 use derive_more::{Error, Display, From};
 use jsonwebtoken::{EncodingKey, DecodingKey};
 use regex::Regex;
@@ -37,23 +38,28 @@ pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error>
     let authorize_admin = middleware::from_fn(account::authorize_admin);
 
     // App
-    let app = Router::new()
+    let mut app = Router::new()
         .route("/account/role",         put(account::update_role))  // Updates an account's role.
-        .layer(authorize_root)                                      // Above routes require root authorization.
+        .route_layer(authorize_root)                                // Above routes require root authorization.
         .route("/thing",                post(thing::create))        // Creates a new Thing.
         .route("/category",             post(category::create))     // Creates a new Category.
         .route("/rank",                 post(rank::create))         // Creates a new Rank for a Thing in a Category.
-        .layer(authorize_admin)                                     // Above routes require admin or root authorization.
+        .route_layer(authorize_admin)                               // Above routes require admin or root authorization.
         .route("/poll/start",           put(poll::start))           // Puts current account into a "polling state" for a particular category.
         .route("/poll/finish",          put(poll::finish))          // Takes current account out of "polling state" by having them submit an answer.
-        .layer(authenticate)                                        // Above routes require authentication.
+        .route_layer(authenticate)                                  // Above routes require authentication.
         .route("/account",              post(account::create))      // Creates a new account.
         .route("/account/login",        post(account::login))       // Logs in an account and return a Claims JWT.
         .route("/thing/:id",            get(thing::single))         // Gets a single Thing.
         .route("/things",               get(thing::list))           // Gets all Things.
         .route("/category/:id",         get(category::single))      // Gets a single Category.
         .route("/categories",           get(category::list))        // Gets all Categories.
-        .with_state(state); 
+        .with_state(state.clone()); 
+
+    // Configures app based on environment
+    if state.typ == AppType::Local {
+        app = app.nest_service("/assets", ServeDir::new("assets"));
+    }
     Ok(app)
 }
 
@@ -67,13 +73,14 @@ pub struct AppState(Arc<AppStateInner>);
 impl AppState {
     pub async fn from_env() -> Result<Self, StartupError> {
         log::info!("Connecting to DB");
-        let file_store = DynFileStore::filesystem("files");
+        let file_store = DynFileStore::filesystem("assets");
         let pg_str: String = read_var(env::APP_DB)?;
         let claims_duration: u64 = read_var(env::APP_CLAIMS_DURATION)?;
         let claims_duration = Duration::from_secs(claims_duration);
         let claims_secret: String = read_var(env::APP_CLAIMS_DURATION)?;
         let claims_secret = claims_secret.as_bytes();
         let pool = PgPoolOptions::new().max_connections(32).connect(&pg_str).await?;
+        let typ: AppType = read_var(env::APP_TYPE)?;
         let state = AppStateInner {
             file_store,
             claims_duration,
@@ -82,9 +89,24 @@ impl AppState {
             max_image_width: 512,
             max_image_height: 512,
             thing_name_pattern: Regex::new(r"^[a-zA-Z0-9_]+$").unwrap(),
-            pool
+            pool,
+            typ
         };
         Ok(Self(Arc::new(state)))
+    }
+}
+
+/// Metadata about the location in which the application is hosted.
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub enum AppType { Local, Aws }
+impl FromStr for AppType {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "local" => Ok(Self::Local),
+            "aws" => Ok(Self::Aws),
+            _ => return Err(())
+        }
     }
 }
 
@@ -98,6 +120,7 @@ pub struct AppStateInner {
     pub max_image_height: u32,
     pub thing_name_pattern: Regex,
     pub pool: PgPool,
+    pub typ: AppType
 }
 
 /// Error that can occur when creating an [`AppState`].
@@ -105,8 +128,11 @@ pub struct AppStateInner {
 pub enum StartupError {
     DotenvyError(dotenvy::Error),
     #[from(ignore)]
+    #[display(fmt="Missing variable '{_0}'")]
     MissingVar(#[error(not(source))] String),
+    #[display(fmt="Failed to parse variable '{_0}'")]
     FailedParsingVar(#[error(not(source))] String),
+    #[display(fmt="SQLX Error '{_0}'")]
     SqlxError(sqlx::Error)
 }
 

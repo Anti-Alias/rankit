@@ -6,3 +6,4 @@ pub const APP_ROOT_ACCOUNT_EMAIL: &str      = "APP_ROOT_ACCOUNT_EMAIL";
 pub const APP_ROOT_ACCOUNT_PASSWORD: &str   = "APP_ROOT_ACCOUNT_PASSWORD";
 pub const APP_CLAIMS_DURATION: &str         = "APP_CLAIMS_DURATION";
 pub const APP_CLAIMS_SECRET: &str           = "APP_CLAIMS_SECRET";
+pub const APP_TYPE: &str                    = "APP_TYPE";
