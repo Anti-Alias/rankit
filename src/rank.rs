@@ -10,8 +10,8 @@ const SCORE_INITIAL: i32 = 1200;
 const DRAW_TWO_QUERY: &str = "\
     SELECT t.id, t.name, t.file, r.score, r.run \
     FROM \
-        rank r ON t.id = r.thing_id \
-        JOIN thing t \
+        rank r \
+        JOIN thing t ON r.thing_id = t.id \
         JOIN category c ON r.category_id = c.id \
     WHERE \
         r.category_id = $1 AND \
@@ -66,7 +66,7 @@ pub struct RankedThing {
 pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> JsonResult<CreateResponse> {
 
     // Checks for the existance of the specified thing and category.
-    log::info!("Checking for existance of thing {} and category {}", request.thing_id, request.category_id);
+    log::trace!("Checking for existance of thing {} and category {}", request.thing_id, request.category_id);
     let thing_and_cat_exist: (bool,) = sqlx::query_as(THING_AND_CATEGORY_EXIST)
         .bind(request.thing_id)
         .bind(request.category_id)
@@ -77,7 +77,7 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
     }
 
     // Fetches existing rank state.
-    log::info!("Checking for existing rank state");
+    log::trace!("Checking for existing rank state");
     let current_run = get_run_of_category(&state, request.category_id);
     let rank_count = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) from rank WHERE thing_id=$1 AND category_id=$2")
         .bind(request.thing_id)
@@ -104,7 +104,7 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
 
 pub async fn draw_two_things(state: &State<AppState>, category_id: i32) -> Result<(RankedThing, RankedThing), AppError> {
     
-    log::info!("Drawing two 'things' in the 'category' {}", category_id);
+    log::trace!("Drawing two 'things' in the 'category' {}", category_id);
     let (thing_a, thing_b) = {
         let scored_things: Vec<(i32, String, String, f64, i32)> = sqlx::query_as(DRAW_TWO_QUERY)
             .bind(category_id)
@@ -121,7 +121,7 @@ pub async fn draw_two_things(state: &State<AppState>, category_id: i32) -> Resul
         (things.next().unwrap(), things.next().unwrap())
     };
 
-    log::info!("Discarding things {} and {} for the next run", thing_a.thing.id, thing_b.thing.id);
+    log::trace!("Discarding things {} and {} for the next run", thing_a.thing.id, thing_b.thing.id);
     let next_run = thing_a.run.max(thing_b.run) + 1;
     sqlx::query("UPDATE rank SET run=$1, shuffle=RANDOM() WHERE thing_id IN ($2,$3) AND category_id=$4")
         .bind(next_run)

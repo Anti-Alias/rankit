@@ -6,7 +6,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::routing::{Router, post, get, put};
 use axum::response::{Response, IntoResponse};
-use axum::middleware::from_fn_with_state;
+use axum::middleware;
 use derive_more::{Error, Display, From};
 use jsonwebtoken::{EncodingKey, DecodingKey};
 use regex::Regex;
@@ -19,43 +19,48 @@ use crate::file_store::{DynFileStore, FileStoreError};
 /// Creates application router.
 pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error> {
 
-    // Migrates DB if requested
+    // Creates shared state and migrates DB if requested.
+    let state = AppState::from_env().await?;
     if migrate {
         migrate::migrate().await?;
+        create_root_account(
+            read_var(env::APP_ROOT_ACCOUNT_NAME)?,
+            read_var(env::APP_ROOT_ACCOUNT_EMAIL)?,
+            read_var(env::APP_ROOT_ACCOUNT_PASSWORD)?,
+            &state.pool
+        ).await?;
     }
-    
-    // Creates shared state
-    let state = AppState::from_env().await?;
-    create_root_account(
-        read_var(env::APP_ROOT_ACCOUNT_NAME)?,
-        read_var(env::APP_ROOT_ACCOUNT_EMAIL)?,
-        read_var(env::APP_ROOT_ACCOUNT_PASSWORD)?,
-        &state.pool
-    ).await?;
 
-    // Builds app
-    let authenticate = from_fn_with_state(state.clone(), account::authenticate);
-    let router = Router::new()
-        .route("/thing",                post(thing::create))    // Creates a new Thing
-        .route("/category",             post(category::create)) // Creates a new Category
-        .route("/rank",                 post(rank::create))     // Creates a new Rank for a Thing in a Category
-        .route("/poll/start",           put(poll::start))       // Puts current user into a "polling state" for a particular category.
-        .route("/poll/finish",          put(poll::finish))      // Takes current user out of "polling state" by having them submit an answer.
-        .layer(authenticate)                                    // ---------- Above require authentication ----------
-        .route("/account",              post(account::create))  // Creates a new account
-        .route("/account/login",        post(account::login))   // Logs in an account and return a Claims JWT
-        .route("/thing/:id",            get(thing::single))     // Gets a single Thing
-        .route("/things",               get(thing::list))       // Gets all Things
-        .route("/category/:id",         get(category::single))  // Gets a single Category
-        .route("/categories",           get(category::list))    // Gets all Categories
-        .with_state(state);
-    Ok(router)
+    // Middleware
+    let authenticate    = middleware::from_fn_with_state(state.clone(), account::authenticate);
+    let authorize_root  = middleware::from_fn(account::authorize_root);
+    let authorize_admin = middleware::from_fn(account::authorize_admin);
+
+    // App
+    let app = Router::new()
+        .route("/account/role",         put(account::update_role))  // Updates an account's role.
+        .layer(authorize_root)                                      // Above routes require root authorization.
+        .route("/thing",                post(thing::create))        // Creates a new Thing.
+        .route("/category",             post(category::create))     // Creates a new Category.
+        .route("/rank",                 post(rank::create))         // Creates a new Rank for a Thing in a Category.
+        .layer(authorize_admin)                                     // Above routes require admin or root authorization.
+        .route("/poll/start",           put(poll::start))           // Puts current account into a "polling state" for a particular category.
+        .route("/poll/finish",          put(poll::finish))          // Takes current account out of "polling state" by having them submit an answer.
+        .layer(authenticate)                                        // Above routes require authentication.
+        .route("/account",              post(account::create))      // Creates a new account.
+        .route("/account/login",        post(account::login))       // Logs in an account and return a Claims JWT.
+        .route("/thing/:id",            get(thing::single))         // Gets a single Thing.
+        .route("/things",               get(thing::list))           // Gets all Things.
+        .route("/category/:id",         get(category::single))      // Gets a single Category.
+        .route("/categories",           get(category::list))        // Gets all Categories.
+        .with_state(state); 
+    Ok(app)
 }
 
 /// Type alias for all app responses.
 pub type JsonResult<T> = Result<(StatusCode, Json<T>), AppError>;
 
-/// Shared resources used by application.
+/// Shared state used by application.
 #[derive(Clone, Deref, DerefMut)]
 pub struct AppState(Arc<AppStateInner>);
 
@@ -113,15 +118,18 @@ pub enum AppError {
     #[from(ignore)]
     MissingMultipartField(#[error(not(source))] &'static str),
     BadThingName,
+    CannotModifyRootAccountRole,
     BadRequest,
     MissingEmailOrUsername,
     MissingAuthHeader,
-    NoMatchingUser,
+    NoMatchingAccount,
     InvalidAuthToken,
     ClaimsError(jsonwebtoken::errors::Error),
+    Unauthenticated,
     Unauthorized,
     CategoryNotFound,
     ThingNotFound,
+    AccountNotFound,
     ThingOrCategoryNotFound,
     DuplicateRecord,
     NotEnoughThings,
@@ -129,35 +137,33 @@ pub enum AppError {
     MultipartError(axum::extract::multipart::MultipartError),
     SqlxError(sqlx::Error),
     PasswordHashError(scrypt::password_hash::Error),
-    FileStoreError(FileStoreError)
+    FileStoreError(FileStoreError),
+    #[from(ignore)]
+    InternalServerError(#[error(not(source))] &'static str)
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         match self {
-            // 400 (Bad request)
             AppError::NonAsciiHeader                => (StatusCode::BAD_REQUEST,    "Header contained non ascii characters").into_response(),
             AppError::MissingMultipartField(field)  => (StatusCode::BAD_REQUEST,    format!("Missing multipart field '{field}'")).into_response(),
             AppError::BadThingName                  => (StatusCode::BAD_REQUEST,    "Bad thing name").into_response(),
+            AppError::CannotModifyRootAccountRole   => (StatusCode::BAD_REQUEST,    "Cannot modify role of root account").into_response(),
             AppError::BadRequest                    => (StatusCode::BAD_REQUEST,    "Bad request").into_response(),
-
-            // 401 (Unauthorized)
             AppError::MissingEmailOrUsername        => (StatusCode::UNAUTHORIZED,   "Missing email or username").into_response(),
             AppError::MissingAuthHeader             => (StatusCode::UNAUTHORIZED,   "Missing auth header").into_response(),
-            AppError::NoMatchingUser                => (StatusCode::UNAUTHORIZED,   "No matching user").into_response(),
+            AppError::NoMatchingAccount             => (StatusCode::UNAUTHORIZED,   "No matching account").into_response(),
             AppError::InvalidAuthToken              => (StatusCode::UNAUTHORIZED,   "Invalid auth token").into_response(),
             AppError::ClaimsError(error)            => (StatusCode::UNAUTHORIZED,   format!("Claims error: {error}")).into_response(),
-            AppError::Unauthorized                  => (StatusCode::UNAUTHORIZED,   "Unauthorized").into_response(),
-
-            // 404 (Not found)
+            AppError::Unauthenticated               => (StatusCode::UNAUTHORIZED,   "Failed to authenticate").into_response(),
+            AppError::Unauthorized                  => (StatusCode::UNAUTHORIZED,   "Account lacks privileges").into_response(),
             AppError::CategoryNotFound              => (StatusCode::NOT_FOUND,      "Category not found").into_response(),
             AppError::ThingNotFound                 => (StatusCode::NOT_FOUND,      "Thing not found").into_response(),
             AppError::ThingOrCategoryNotFound       => (StatusCode::NOT_FOUND,      "Thing or category not found").into_response(),
-
-            // 409 (Conflict)
-            AppError::DuplicateRecord               => (StatusCode::CONFLICT,      "Duplicate record").into_response(),
-            AppError::NotEnoughThings               => (StatusCode::CONFLICT,      "Not enough things in category to compare").into_response(),
-            AppError::NotInPollingState             => (StatusCode::CONFLICT,      "Account not in a polling state").into_response(),
+            AppError::AccountNotFound               => (StatusCode::NOT_FOUND,      "Account not found").into_response(),
+            AppError::DuplicateRecord               => (StatusCode::CONFLICT,       "Duplicate record").into_response(),
+            AppError::NotEnoughThings               => (StatusCode::CONFLICT,       "Not enough things in category to compare").into_response(),
+            AppError::NotInPollingState             => (StatusCode::CONFLICT,       "Account not in a polling state").into_response(),
 
             // 500 (Internal server error)
             AppError::MultipartError(error) => {
@@ -175,7 +181,11 @@ impl IntoResponse for AppError {
             AppError::FileStoreError(error) => {
                 log::error!("File store error: {error:?}");
                 (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-            },            
+            },
+            AppError::InternalServerError(msg) => {
+                log::error!("{msg}");
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+            }
         }
     }
 }

@@ -52,7 +52,7 @@ pub async fn start(
     request: Json<StartPollRequest>
 ) -> JsonResult<StartPollResponse> {
 
-    log::info!("Getting category {}", request.category_id);
+    log::trace!("Getting category {}", request.category_id);
     let category: Option<Category> = sqlx::query_as("SELECT id, name FROM category WHERE id=$1 AND deleted is NULL")
         .bind(request.category_id)
         .fetch_optional(&state.pool)
@@ -61,13 +61,13 @@ pub async fn start(
         return Err(AppError::CategoryNotFound);
     };
 
-    log::info!("Putting account out of polling state");
+    log::trace!("Putting account out of polling state");
     sqlx::query("DELETE FROM poll WHERE account_id=$1")
         .bind(claims.id)
         .execute(&state.pool)
         .await?;
 
-    log::info!("Drawing two random 'things'");
+    log::trace!("Drawing two random 'things'");
     let (thing_a, thing_b) = rank::draw_two_things(&state, category.id).await?;
     sqlx::query("INSERT INTO poll (account_id, category_id, thing_id_a, thing_id_b) VALUES ($1,$2,$3,$4)")
         .bind(claims.id)
@@ -96,7 +96,7 @@ pub async fn finish(
     let conn = transaction.acquire().await?;
     
     // Gets scores of things referenced in current polling state.
-    log::info!("Fetching polling data for account {}", claims.id);
+    log::trace!("Fetching polling data for account {}", claims.id);
     let scores: Option<(i32, i32, i32, f64, f64)> = sqlx::query_as(GET_POLL_DATA)
         .bind(claims.id)
         .fetch_optional(&mut *conn)
@@ -109,10 +109,10 @@ pub async fn finish(
     let outcome: f64 = match request.preference { Preference::A => 1.0, Preference::B => 0.0 };
     let new_score_a = compute_elo(score_a, score_b, outcome, ELO_SCALE, ELO_C);
     let new_score_b = compute_elo(score_b, score_a, 1.0 - outcome, ELO_SCALE, ELO_C);
-    log::info!("Updated old scores from {}, {} to {}, {}", score_a, score_b, new_score_a, new_score_b);
+    log::trace!("Updated old scores from {}, {} to {}, {}", score_a, score_b, new_score_a, new_score_b);
 
     // Updates scores
-    log::info!("Updating scores");
+    log::trace!("Updating scores");
     sqlx::query(UPDATE_RANK)
         .bind(new_score_a)
         .bind(thing_id_a)
@@ -126,7 +126,7 @@ pub async fn finish(
         .execute(&mut *conn)
         .await?;
 
-    // Takes user out of polling state
+    // Takes account out of polling state
     sqlx::query("DELETE FROM poll WHERE account_id=$1")
         .bind(claims.id)
         .execute(conn)

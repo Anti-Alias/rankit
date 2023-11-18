@@ -7,7 +7,7 @@ default-run = "rankit"
 [dependencies]
 anyhow = "1.0"
 async-fs = "2.1.0"
-axum = { version = "0.6", features = ["multipart"] }
+axum = { version = "0.6", features = ["multipart", "macros"] }
 axum-test-helper = "0.3.0"
 chrono = { version = "0.4", features = ["serde"] }
 derive_more = "0.99"

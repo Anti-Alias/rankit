@@ -56,10 +56,10 @@ COMMENT ON TYPE role IS
 '"basic" accounts can only submit polls.'
 '"admin" accounts inherit from "basic", and can POST new "things", "categories" and "ranks".'
 '"root" accounts inherit from "admin", can can give an admin role to accounts.'
-'There is only 1 root user.';
+'There is only 1 root account.';
 
 COMMENT ON TABLE account IS
-'A user that is responsible for answering "polls" on the site.'
+'An account that is responsible for answering "polls" on the site.'
 'May have other privileges depending on their "role".';
 
 COMMENT ON TABLE thing IS

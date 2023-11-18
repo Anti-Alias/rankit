@@ -1,12 +1,12 @@
 use std::time::SystemTime;
 
+use rankit::account::RoleLesser;
 use reqwest::StatusCode;
 use reqwest::multipart::{Form, Part};
 use axum_test_helper::*;
-use rankit::account::LoginRequest;
 use rankit::app::read_var;
 use rankit::{env, rank};
-use rankit::{app, category, thing};
+use rankit::{app, category, thing, account};
 use serde_json::{to_vec, to_string};
 use tokio::join;
 
@@ -27,6 +27,15 @@ async fn main() {
 
     println!("___Logging in as root___");
     let root_bearer = login(&root_name, &root_pass, &client).await;
+
+    println!("___Creating accounts___");
+    let(_basic_id, admin_id) = join!(
+        create_account("basic", "basic@gmail.com", "password", &client),
+        create_account("admin", "admin@gmail.com", "password", &client),
+    );
+
+    println!("___Setting roles___");
+    set_role(admin_id, RoleLesser::Admin, &root_bearer, &client).await;
 
     println!("___Creating things___");
     let (apple_id, rice_id, oatmeal_id, steak_id, chicken_id, pork_id) = join!(
@@ -67,7 +76,7 @@ async fn main() {
 }
 
 async fn login(root_name: &str, root_pass: &str, client: &TestClient) -> String {
-    let body = to_vec(&LoginRequest {
+    let body = to_vec(&account::LoginRequest {
         name: Some(root_name.into()),
         email: None,
         password: root_pass.into()
@@ -82,6 +91,29 @@ async fn login(root_name: &str, root_pass: &str, client: &TestClient) -> String 
     let bearer = format!("Bearer {claims_str}");
     println!("{bearer}");
     bearer
+}
+
+async fn create_account(name: &str, email: &str, password: &str, client: &TestClient) -> i32 {
+    let body = to_string(&account::CreateRequest { name: name.into(), email: email.into(), password: password.into() }).unwrap();
+    let response = client.post("/account")
+        .header("Content-Type", "application/json")
+        .body(body)
+        .send()
+        .await;
+    expect_status(StatusCode::CREATED, response.status());
+    let response_body: account::CreateResponse = response.json().await;
+    response_body.id
+}
+
+async fn set_role(account_id: i32, role: RoleLesser, bearer: &str, client: &TestClient) {
+    let body = to_string(&account::UpdateRoleRequest { account_id, role }).unwrap();
+    let response = client.put("/account/role")
+        .header("Authorization", bearer)
+        .header("Content-Type", "application/json")
+        .body(body)
+        .send()
+        .await;
+    expect_status(StatusCode::NO_CONTENT, response.status());
 }
 
 async fn create_thing(name: &str, bytes: &'static [u8], bearer: &str, client: &TestClient) -> i32 {
@@ -127,5 +159,4 @@ fn expect_status(expected: StatusCode, actual: StatusCode) {
     if actual != expected {
         panic!("Expected status {expected}. Got {actual}");
     }
-    println!("Status {actual}");
 }
