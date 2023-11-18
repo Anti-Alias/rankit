@@ -10,8 +10,8 @@ const SCORE_INITIAL: i32 = 1200;
 const DRAW_TWO_QUERY: &str = "\
     SELECT t.id, t.name, t.file, r.score, r.run \
     FROM \
-        thing t \
-        JOIN rank r ON t.id = r.thing_id \
+        rank r ON t.id = r.thing_id \
+        JOIN thing t \
         JOIN category c ON r.category_id = c.id \
     WHERE \
         r.category_id = $1 AND \
