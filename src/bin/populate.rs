@@ -29,43 +29,37 @@ async fn main() {
     let root_bearer = login(&root_name, &root_pass, &client).await;
 
     println!("___Creating things___");
-    let apple_bytes     = include_bytes!("images/apple.jpg");
-    let rice_bytes      = include_bytes!("images/rice.jpg");
-    let oatmeal_bytes   = include_bytes!("images/oatmeal.jpg");
-    let steak_bytes     = include_bytes!("images/steak.jpg");
-    let chicken_bytes   = include_bytes!("images/chicken.jpg");
-    let pork_bytes      = include_bytes!("images/pork.jpg");
     let (apple_id, rice_id, oatmeal_id, steak_id, chicken_id, pork_id) = join!(
-        create_thing("apple", apple_bytes, &root_bearer, &client),
-        create_thing("rice", rice_bytes, &root_bearer, &client),
-        create_thing("oatmeal", oatmeal_bytes, &root_bearer, &client),
-        create_thing("steak", steak_bytes, &root_bearer, &client),
-        create_thing("chicken", chicken_bytes, &root_bearer, &client),
-        create_thing("pork", pork_bytes, &root_bearer, &client),
+        create_thing("apple",   include_bytes!("images/apple.jpg"),     &root_bearer, &client),
+        create_thing("rice",    include_bytes!("images/rice.jpg"),      &root_bearer, &client),
+        create_thing("oatmeal", include_bytes!("images/oatmeal.jpg"),   &root_bearer, &client),
+        create_thing("steak",   include_bytes!("images/steak.jpg"),     &root_bearer, &client),
+        create_thing("chicken", include_bytes!("images/chicken.jpg"),   &root_bearer, &client),
+        create_thing("pork",    include_bytes!("images/pork.jpg"),      &root_bearer, &client),
     );
 
     println!("___Creating categories___");
     let (food_id, fruit_id, grain_id, meat_id) = join!(
-        create_category("food", &root_bearer, &client),
-        create_category("fruit", &root_bearer, &client),
-        create_category("grain", &root_bearer, &client),
-        create_category("meat", &root_bearer, &client)
+        create_category("food",     &root_bearer, &client),
+        create_category("fruit",    &root_bearer, &client),
+        create_category("grain",    &root_bearer, &client),
+        create_category("meat",     &root_bearer, &client),
     );
 
     println!("___Creating ranks__");
     join!(
-        create_rank(apple_id, food_id, &root_bearer, &client),
-        create_rank(apple_id, fruit_id, &root_bearer, &client),
-        create_rank(rice_id, food_id, &root_bearer, &client),
-        create_rank(rice_id, grain_id, &root_bearer, &client),
-        create_rank(oatmeal_id, food_id, &root_bearer, &client),
-        create_rank(oatmeal_id, grain_id, &root_bearer, &client),
-        create_rank(steak_id, food_id, &root_bearer, &client),
-        create_rank(steak_id, meat_id, &root_bearer, &client),
-        create_rank(chicken_id, food_id, &root_bearer, &client),
-        create_rank(chicken_id, meat_id, &root_bearer, &client),
-        create_rank(pork_id, food_id, &root_bearer, &client),
-        create_rank(pork_id, meat_id, &root_bearer, &client),
+        create_rank(apple_id,   food_id,    &root_bearer, &client),
+        create_rank(apple_id,   fruit_id,   &root_bearer, &client),
+        create_rank(rice_id,    food_id,    &root_bearer, &client),
+        create_rank(rice_id,    grain_id,   &root_bearer, &client),
+        create_rank(oatmeal_id, food_id,    &root_bearer, &client),
+        create_rank(oatmeal_id, grain_id,   &root_bearer, &client),
+        create_rank(steak_id,   food_id,    &root_bearer, &client),
+        create_rank(steak_id,   meat_id,    &root_bearer, &client),
+        create_rank(chicken_id, food_id,    &root_bearer, &client),
+        create_rank(chicken_id, meat_id,    &root_bearer, &client),
+        create_rank(pork_id,    food_id,    &root_bearer, &client),
+        create_rank(pork_id,    meat_id,    &root_bearer, &client),
     );
 
     let duration = SystemTime::now().duration_since(start_time).unwrap();
