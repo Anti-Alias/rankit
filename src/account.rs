@@ -1,3 +1,4 @@
+use axum_auth::AuthBasic;
 use jsonwebtoken::{encode, decode, Header, Validation, DecodingKey};
 use axum::{Json, extract::State, middleware::Next};
 use axum::response::{Response, IntoResponse};
@@ -139,20 +140,22 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
 }
 
 /// Route that logs in an account.
-pub async fn login(state: State<AppState>, request: Json<LoginRequest>) -> Result<String, AppError> {
+pub async fn login(state: State<AppState>, auth: AuthBasic) -> Result<String, AppError> {
     
-    // Fetches details of account matching either the email or username.
-    let result: Option<(i32, String, String, Role, String)> = match (&request.email, &request.name) {
-        (_, Some(name))     => sqlx::query_as("SELECT id, email, name, role, password FROM account WHERE name=$1 AND deleted IS NULL").bind(name).fetch_optional(&state.pool).await?,
-        (Some(email), _)    => sqlx::query_as("SELECT id, email, name, role, password FROM account WHERE email=$1 AND deleted IS NULL").bind(email).fetch_optional(&state.pool).await?,
-        (None, None)        => return Err(AppError::MissingEmailOrUsername),
+    // Fetches details of account matching the email.
+    let (login_email, login_password) = auth.0;
+    let Some(login_password) = login_password else {
+        return Err(AppError::MissingPassword);
     };
+    let result: Option<(i32, String, String, Role, String)> = sqlx::query_as("SELECT id, email, name, role, password FROM account WHERE name=$1 AND deleted IS NULL")
+        .bind(login_email)
+        .fetch_optional(&state.pool).await?;
     let Some((id, email, name, role, password)) = result else {
         return Err(AppError::NoMatchingAccount);
     };
 
     // Checks that passwords match.
-    match verify_password(request.password.clone(), password).await {
+    match verify_password(login_password, password).await {
         Err(scrypt::password_hash::Error::Password) => return Err(AppError::NoMatchingAccount),
         Err(err) => return Err(AppError::PasswordHashError(err)),
         Ok(_) => {},
