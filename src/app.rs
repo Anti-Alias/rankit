@@ -4,7 +4,7 @@ use std::time::Duration;
 use derive_more::{Deref, DerefMut};
 use axum::Json;
 use axum::http::StatusCode;
-use axum::routing::{Router, post, get, put};
+use axum::routing::{Router, post, get, put, delete};
 use axum::response::{Response, IntoResponse};
 use axum::middleware;
 use tower_http::services::ServeDir;
@@ -42,6 +42,7 @@ pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error>
         .route("/account/role",         put(account::update_role))  // Updates an account's role.
         .route_layer(authorize_root)                                // Above routes require root authorization.
         .route("/thing",                post(thing::create))        // Creates a new Thing.
+        .route("/thing/:id",            delete(thing::delete))      // Deletes a Thing.
         .route("/category",             post(category::create))     // Creates a new Category.
         .route("/rank",                 post(rank::create))         // Creates a new Rank for a Thing in a Category.
         .route_layer(authorize_admin)                               // Above routes require admin or root authorization.

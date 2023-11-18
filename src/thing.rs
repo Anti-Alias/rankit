@@ -80,7 +80,7 @@ pub async fn create(state: State<AppState>, mut multipart: Multipart) -> JsonRes
     }
 
     // Checks for duplicate thing.
-    let thing_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM thing WHERE name=$1")
+    let thing_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM thing WHERE name=$1 AND deleted IS NULL")
         .bind(&request.name)
         .fetch_one(&state.pool)
         .await?;
@@ -105,8 +105,34 @@ pub async fn create(state: State<AppState>, mut multipart: Multipart) -> JsonRes
     Ok((StatusCode::CREATED, Json(CreateResponse { thing })))
 }
 
+pub async fn delete(state: State<AppState>, path: Path<i32>) -> Result<StatusCode, AppError> {
+    let thing_id = path.0;
+    
+    // Deletes image associated with thing from file store.
+    log::trace!("Deleting thing from file store");
+    let thing_image: Option<(String,)> = sqlx::query_as("SELECT file FROM thing WHERE id=$1 AND deleted IS NULL")
+        .bind(thing_id)
+        .fetch_optional(&state.pool)
+        .await?;
+    let Some(thing_image) = thing_image else {
+        return Err(AppError::ThingNotFound);
+    };
+    let thing_image = thing_image.0;
+    if let Err(err) = state.file_store.delete(&thing_image).await {
+        log::error!("Failed to delete image {thing_image}: {err}");
+    }
+
+    // Deletes thing from DB
+    log::trace!("Deleting thing from DB");
+    sqlx::query("UPDATE thing SET deleted=NOW() WHERE id=$1 AND deleted IS NULL")
+        .bind(thing_id)
+        .execute(&state.pool)
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
 pub async fn single(state: State<AppState>, path: Path<i32>) -> JsonResult<Thing> {
-    let thing: Option<Thing> = sqlx::query_as("SELECT id, name, file FROM thing WHERE id = $1")
+    let thing: Option<Thing> = sqlx::query_as("SELECT id, name, file FROM thing WHERE id = $1 AND deleted IS null")
         .bind(path.0)
         .fetch_optional(&state.pool)
         .await?;
@@ -119,7 +145,7 @@ pub async fn single(state: State<AppState>, path: Path<i32>) -> JsonResult<Thing
 /// Paginated list of all things.
 pub async fn list(state: State<AppState>, query: Query<QueryParams>) -> JsonResult<Vec<Thing>> {
     let query = query.0;
-    let mut builder = QueryBuilder::new("SELECT id, name, file FROM thing");
+    let mut builder = QueryBuilder::new("SELECT id, name, file FROM thing WHERE deleted IS NULL");
     if let Some(order) = query.order {
         builder.push(" ORDER BY ").push(order);
     }

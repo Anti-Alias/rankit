@@ -46,6 +46,7 @@ impl FilesystemFileStore {
 impl FileStore for FilesystemFileStore {
 
     async fn create(&self, file: &str, bytes: &[u8]) -> Result<(), FileStoreError> {
+        log::trace!("Creating file {file}");
         if !self.file_pattern.is_match(file) {
             return Err(FileStoreError::InvalidFileName(file.into()));
         }
@@ -57,6 +58,7 @@ impl FileStore for FilesystemFileStore {
     }
 
     async fn delete(&self, file: &str) -> Result<(), FileStoreError> {
+        log::trace!("Deleting file {file}");
         if !self.file_pattern.is_match(file) {
             return Err(FileStoreError::InvalidFileName(file.into()));
         }
