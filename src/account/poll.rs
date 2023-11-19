@@ -3,7 +3,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use serde::{Serialize, Deserialize};
 use sqlx::Acquire;
-use crate::{thing, rank, account};
+use crate::{thing, account, category};
 use crate::app::{AppState, AppError, JsonResult};
 use crate::category::Category;
 
@@ -46,7 +46,7 @@ pub struct FinishPollRequest {
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
 pub enum Preference { A, B }
 
-pub async fn start(state: State<AppState>, claims: Extension<account::Claims>, request: Json<StartPollRequest>) -> JsonResult<StartPollResponse> {
+pub async fn start_poll(state: State<AppState>, claims: Extension<account::Claims>, request: Json<StartPollRequest>) -> JsonResult<StartPollResponse> {
 
     log::trace!("Getting category {}", request.category_id);
     let category: Option<Category> = sqlx::query_as("SELECT id, name FROM category WHERE id=$1 AND deleted is NULL")
@@ -64,7 +64,7 @@ pub async fn start(state: State<AppState>, claims: Extension<account::Claims>, r
         .await?;
 
     log::trace!("Drawing two random 'things'");
-    let (thing_a, thing_b) = rank::draw_two_things(&state, category.id).await?;
+    let (thing_a, thing_b) = category::draw_two_things(&state, category.id).await?;
     sqlx::query("INSERT INTO poll (account_id, category_id, thing_id_a, thing_id_b) VALUES ($1,$2,$3,$4)")
         .bind(claims.id)
         .bind(category.id)
@@ -82,7 +82,7 @@ pub async fn start(state: State<AppState>, claims: Extension<account::Claims>, r
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-pub async fn finish(
+pub async fn end_poll(
     state: State<AppState>,
     claims: Extension<account::Claims>,
     request: Json<FinishPollRequest>

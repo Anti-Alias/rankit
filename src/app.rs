@@ -13,7 +13,7 @@ use jsonwebtoken::{EncodingKey, DecodingKey};
 use regex::Regex;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use crate::account::create_root_account;
-use crate::{account, thing, env, category, rank, poll, migrate};
+use crate::{account, thing, env, category, rank, migrate};
 use crate::file_store::{DynFileStore, FileStoreError};
 
 
@@ -39,24 +39,28 @@ pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error>
 
     // App
     let mut app = Router::new()
-        .route("/account/role",         put(account::update_role))  // Updates an account's role.
-        .route_layer(authorize_root)                                // Above routes require root authorization.
-        .route("/thing",                post(thing::create))        // Creates a new Thing.
-        .route("/thing/:id",            delete(thing::delete))      // Deletes a Thing.
-        .route("/category",             post(category::create))     // Creates a new Category.
-        .route("/category/:id",         delete(category::delete))   // Deletes a Category.
-        .route("/rank",                 post(rank::create))         // Creates a new Rank for a Thing in a Category.
-        .route("/rank/:id",             delete(rank::delete))       // Deletes a Rank.
-        .route_layer(authorize_admin)                               // Above routes require admin or root authorization.
-        .route("/poll/start",           put(poll::start))           // Puts current account into a "polling state" for a particular category.
-        .route("/poll/finish",          put(poll::finish))          // Takes current account out of "polling state" by having them submit an answer.
-        .route_layer(authenticate)                                  // Above routes require authentication.
-        .route("/account",              post(account::create))      // Creates a new account.
-        .route("/account/login",        post(account::login))       // Logs in an account and return a Claims JWT.
-        .route("/thing/:id",            get(thing::single))         // Gets a single Thing.
-        .route("/things",               get(thing::list))           // Gets all Things.
-        .route("/category/:id",         get(category::single))      // Gets a single Category.
-        .route("/categories",           get(category::list))        // Gets all Categories.
+        .route("/account/role",             put(account::update_role))  // Updates an account's role.
+        // Above routes require root authorization.
+        .route_layer(authorize_root)
+        .route("/thing",                    post(thing::create))        // Creates a new Thing.
+        .route("/thing/:id",                delete(thing::delete))      // Deletes a Thing.
+        .route("/category",                 post(category::create))     // Creates a new Category.
+        .route("/category/:id",             delete(category::delete))   // Deletes a Category.
+        .route("/rank",                     post(rank::create))         // Creates a new Rank for a Thing in a Category.
+        .route("/rank/:id",                 delete(rank::delete))       // Deletes a Rank.
+        // Above routes require admin or root authorization.
+        .route_layer(authorize_admin)
+        .route("/account/start_poll",       put(account::start_poll))   // Puts current account into a "polling state" for a particular category.
+        .route("/account/end_poll",         put(account::end_poll))     // Takes current account out of "polling state" by having them submit an answer.
+        // Above routes require authentication.
+        .route_layer(authenticate)
+        .route("/account",                  post(account::create))      // Creates a new account.
+        .route("/account/login",            post(account::login))       // Logs in an account and return a Claims JWT.
+        .route("/things",                   get(thing::list))           // Gets all Things.
+        .route("/thing/:id",                get(thing::single))         // Gets a single Thing.
+        .route("/categories",               get(category::list))        // Gets all Categories.
+        .route("/category/:id",             get(category::single))      // Gets a single Category.
+        .route("/category/:id/statistics",  get(category::statistics))  // Gets statistics for a Category.
         .with_state(state.clone()); 
 
     // Configures app based on environment

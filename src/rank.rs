@@ -8,19 +8,6 @@ use crate::thing;
 use crate::app::{AppState, JsonResult, AppError};
 
 const SCORE_INITIAL: i32 = 1200;
-const DRAW_TWO_QUERY: &str = "\
-    SELECT r.id, r.score, r.run, t.id, t.name, t.file \
-    FROM \
-        rank r \
-        JOIN thing t ON r.thing_id = t.id \
-        JOIN category c ON r.category_id = c.id \
-    WHERE \
-        r.category_id = $1 \
-        AND r.deleted IS NULL \
-    ORDER BY \
-        r.run, r.shuffle \
-    LIMIT 2\
-";
 
 /// Used to verify that both a "thing" and a "category" exists.
 const THING_AND_CATEGORY_EXIST: &str = "\
@@ -40,6 +27,8 @@ pub struct Rank {
     pub thing_id: i32,
     pub category_id: i32,
     pub score: f64,
+    #[serde(skip)]
+    pub run: i32
 }
 
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
@@ -56,11 +45,19 @@ pub struct CreateResponse {
 /// A [`Thing`](crate::thing::Thing) with associated [`Rank`] data for a given [`Category`](crate::category::Category).
 #[derive(Serialize, Deserialize, FromRow, Clone, PartialEq, Debug)]
 pub struct RankedThing {
-    pub rank_id: i32,
-    pub thing: thing::Thing,
-    pub score: f64,
-    #[serde(skip_serializing)]
-    pub run: i32,
+    pub rank: Rank,
+    pub thing: thing::Thing
+}
+
+impl RankedThing {
+
+    /// Helper method for mapping tuples returned from SQL.
+    pub fn from_tuple(row: (i32, i32, i32, f64, i32, i32, String, String)) -> Self {
+        Self {
+            rank:       Rank { id: row.0, thing_id: row.1, category_id: row.2, score: row.3, run: row.4 },
+            thing:      thing::Thing { id: row.5, name: row.6, file: row.7 },
+        }
+    }
 }
 
 /// Associates a [`Thing`](crate::thing::Thing) to a [`Category`](crate::category::Category)
@@ -123,40 +120,6 @@ pub async fn delete(state: State<AppState>, path: Path<i32>) -> Result<StatusCod
         .await?;
 
     Ok(StatusCode::NO_CONTENT)
-}
-
-pub async fn draw_two_things(state: &State<AppState>, category_id: i32) -> Result<(RankedThing, RankedThing), AppError> {
-    
-    log::trace!("Drawing two 'things' in the 'category' {}", category_id);
-    let (thing_a, thing_b) = {
-        let scored_things: Vec<(i32, f64, i32, i32, String, String)> = sqlx::query_as(DRAW_TWO_QUERY)
-            .bind(category_id)
-            .fetch_all(&state.pool)
-            .await?;
-        if scored_things.len() != 2 {
-            return Err(AppError::NotEnoughThings);
-        }
-        let mut things = scored_things.into_iter().map(|row| RankedThing {
-            rank_id: row.0,
-            score: row.1,
-            run: row.2,
-            thing: thing::Thing { id: row.3, name: row.4, file: row.5 },
-        });
-        (things.next().unwrap(), things.next().unwrap())
-    };
-
-    log::trace!("Discarding things {} and {} for the next run", thing_a.thing.id, thing_b.thing.id);
-    let next_run = thing_a.run.max(thing_b.run) + 1;
-    sqlx::query("UPDATE rank SET run=$1, shuffle=RANDOM() WHERE thing_id IN ($2,$3) AND category_id=$4")
-        .bind(next_run)
-        .bind(thing_a.thing.id)
-        .bind(thing_b.thing.id)
-        .bind(category_id)
-        .execute(&state.pool)
-        .await?;
-
-    // Done
-    Ok((thing_a, thing_b))
 }
 
 async fn get_run_of_category(state: &State<AppState>, category_id: i32) -> Result<i32, sqlx::Error> {
