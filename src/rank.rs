@@ -1,4 +1,5 @@
-use axum::{extract::State, Json};
+use axum::Json;
+use axum::extract::{State, Path};
 use axum::http::StatusCode;
 use serde::{Serialize, Deserialize};
 use sqlx::FromRow;
@@ -8,15 +9,14 @@ use crate::app::{AppState, JsonResult, AppError};
 
 const SCORE_INITIAL: i32 = 1200;
 const DRAW_TWO_QUERY: &str = "\
-    SELECT t.id, t.name, t.file, r.score, r.run \
+    SELECT r.id, r.score, r.run, t.id, t.name, t.file \
     FROM \
         rank r \
         JOIN thing t ON r.thing_id = t.id \
         JOIN category c ON r.category_id = c.id \
     WHERE \
-        r.category_id = $1 AND \
-        t.deleted IS NULL AND \
-        c.deleted IS NULL \
+        r.category_id = $1 \
+        AND r.deleted IS NULL \
     ORDER BY \
         r.run, r.shuffle \
     LIMIT 2\
@@ -36,6 +36,7 @@ const THING_AND_CATEGORY_EXIST: &str = "\
 /// Uses ELO rating system: https://en.wikipedia.org/wiki/Elo_rating_system
 #[derive(FromRow, Serialize, Deserialize, Clone,  PartialEq, Debug)]
 pub struct Rank {
+    pub id: i32,
     pub thing_id: i32,
     pub category_id: i32,
     pub score: f64,
@@ -52,8 +53,10 @@ pub struct CreateResponse {
     pub rank: Rank
 }
 
+/// A [`Thing`](crate::thing::Thing) with associated [`Rank`] data for a given [`Category`](crate::category::Category).
 #[derive(Serialize, Deserialize, FromRow, Clone, PartialEq, Debug)]
 pub struct RankedThing {
+    pub rank_id: i32,
     pub thing: thing::Thing,
     pub score: f64,
     #[serde(skip_serializing)]
@@ -79,7 +82,7 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
     // Fetches existing rank state.
     log::trace!("Checking for existing rank state");
     let current_run = get_run_of_category(&state, request.category_id);
-    let rank_count = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) from rank WHERE thing_id=$1 AND category_id=$2")
+    let rank_count = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) from rank WHERE thing_id=$1 AND category_id=$2 AND deleted IS NULL")
         .bind(request.thing_id)
         .bind(request.category_id)
         .fetch_one(&state.pool);
@@ -92,7 +95,7 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
 
     // Generates and inserts a new rank.
     // "Thing" will be "comparable" in the next "run".
-    let rank: Rank = sqlx::query_as("INSERT INTO rank (thing_id, category_id, score, run) VALUES ($1,$2,$3,$4) RETURNING thing_id, category_id, score")
+    let rank: Rank = sqlx::query_as("INSERT INTO rank (thing_id, category_id, score, run) VALUES ($1,$2,$3,$4) RETURNING id, thing_id, category_id, score")
         .bind(request.thing_id)
         .bind(request.category_id)
         .bind(SCORE_INITIAL)
@@ -102,11 +105,31 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
     Ok((StatusCode::CREATED, Json(CreateResponse { rank })))
 }
 
+pub async fn delete(state: State<AppState>, path: Path<i32>) -> Result<StatusCode, AppError> {
+    let rank_id = path.0;
+
+    log::trace!("Checking that rank {rank_id} exists");
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM rank WHERE id=$1 AND deleted IS NULL")
+        .bind(rank_id)
+        .fetch_one(&state.pool)
+        .await?;
+    if count.0 == 0 {
+        return Err(AppError::RankNotFound);
+    }
+    log::trace!("Deleting rank {rank_id}");
+    sqlx::query("UPDATE rank SET deleted=NOW() WHERE id=$1 AND deleted IS NULL")
+        .bind(rank_id)
+        .execute(&state.pool)
+        .await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
 pub async fn draw_two_things(state: &State<AppState>, category_id: i32) -> Result<(RankedThing, RankedThing), AppError> {
     
     log::trace!("Drawing two 'things' in the 'category' {}", category_id);
     let (thing_a, thing_b) = {
-        let scored_things: Vec<(i32, String, String, f64, i32)> = sqlx::query_as(DRAW_TWO_QUERY)
+        let scored_things: Vec<(i32, f64, i32, i32, String, String)> = sqlx::query_as(DRAW_TWO_QUERY)
             .bind(category_id)
             .fetch_all(&state.pool)
             .await?;
@@ -114,9 +137,10 @@ pub async fn draw_two_things(state: &State<AppState>, category_id: i32) -> Resul
             return Err(AppError::NotEnoughThings);
         }
         let mut things = scored_things.into_iter().map(|row| RankedThing {
-            thing: thing::Thing { id: row.0, name: row.1, file: row.2 },
-            score: row.3,
-            run: row.4
+            rank_id: row.0,
+            score: row.1,
+            run: row.2,
+            thing: thing::Thing { id: row.3, name: row.4, file: row.5 },
         });
         (things.next().unwrap(), things.next().unwrap())
     };

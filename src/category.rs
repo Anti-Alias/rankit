@@ -1,7 +1,7 @@
 use axum::{Json, extract::{State, Path}};
 use axum::http::StatusCode;
 use serde::{Serialize, Deserialize};
-use sqlx::FromRow;
+use sqlx::prelude::*;
 use crate::{app::JsonResult, AppState, AppError};
 
 /// Represents the "category" of a [`Thing`](crate::Thing).
@@ -50,7 +50,7 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
 pub async fn delete(state: State<AppState>, path: Path<i32>) -> Result<StatusCode, AppError> {
     let category_id = path.0;
 
-    // Checks that category exists
+    log::trace!("Checking that category {category_id} exists");
     let category_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM category WHERE id=$1 AND deleted IS NULL")
         .bind(category_id)
         .fetch_one(&state.pool)
@@ -59,12 +59,23 @@ pub async fn delete(state: State<AppState>, path: Path<i32>) -> Result<StatusCod
         return Err(AppError::CategoryNotFound);
     }
 
-    // Deletes category
+    let mut transaction = state.pool.begin().await?;
+    let conn = transaction.acquire().await?;
+
+    log::trace!("Deleting category {category_id}");
     sqlx::query("UPDATE category SET deleted=NOW() WHERE id=$1 AND deleted IS NULL")
         .bind(&category_id)
-        .execute(&state.pool)
+        .execute(&mut *conn)
         .await
         .map_err(|_| AppError::CategoryNotFound)?;
+
+    log::trace!("Deleting ranks associated with category {category_id}");
+    sqlx::query("UPDATE rank SET deleted=NOW() WHERE category_id=$1 AND deleted IS NULL")
+        .bind(category_id)
+        .execute(conn)
+        .await?;
+
+    transaction.commit().await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

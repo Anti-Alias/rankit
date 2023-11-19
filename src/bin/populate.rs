@@ -1,5 +1,5 @@
 use std::time::SystemTime;
-
+use base64::{Engine as _, engine::general_purpose};
 use rankit::account::RoleLesser;
 use reqwest::StatusCode;
 use reqwest::multipart::{Form, Part};
@@ -76,14 +76,10 @@ async fn main() {
 }
 
 async fn login(root_name: &str, root_pass: &str, client: &TestClient) -> String {
-    let body = to_vec(&account::LoginRequest {
-        name: Some(root_name.into()),
-        email: None,
-        password: root_pass.into()
-    }).unwrap();
+    let credentials = format!("{}:{}", root_name, root_pass);
+    let credentials = general_purpose::STANDARD_NO_PAD.encode(credentials);
     let response = client.post("/account/login")
-        .header("Content-Type", "application/json")
-        .body(body)
+        .header("Authorization", format!("Basic {}", credentials))
         .send()
         .await;
     expect_status(StatusCode::OK, response.status());

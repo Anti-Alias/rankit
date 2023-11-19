@@ -46,6 +46,7 @@ pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error>
         .route("/category",             post(category::create))     // Creates a new Category.
         .route("/category/:id",         delete(category::delete))   // Deletes a Category.
         .route("/rank",                 post(rank::create))         // Creates a new Rank for a Thing in a Category.
+        .route("/rank/:id",             delete(rank::delete))       // Deletes a Rank.
         .route_layer(authorize_admin)                               // Above routes require admin or root authorization.
         .route("/poll/start",           put(poll::start))           // Puts current account into a "polling state" for a particular category.
         .route("/poll/finish",          put(poll::finish))          // Takes current account out of "polling state" by having them submit an answer.
@@ -158,6 +159,7 @@ pub enum AppError {
     Unauthorized,
     CategoryNotFound,
     ThingNotFound,
+    RankNotFound,
     AccountNotFound,
     ThingOrCategoryNotFound,
     DuplicateRecord,
@@ -189,6 +191,7 @@ impl IntoResponse for AppError {
             AppError::Unauthorized                  => (StatusCode::UNAUTHORIZED,   "Account lacks privileges").into_response(),
             AppError::CategoryNotFound              => (StatusCode::NOT_FOUND,      "Category not found").into_response(),
             AppError::ThingNotFound                 => (StatusCode::NOT_FOUND,      "Thing not found").into_response(),
+            AppError::RankNotFound                  => (StatusCode::NOT_FOUND,      "Rank not found").into_response(),
             AppError::ThingOrCategoryNotFound       => (StatusCode::NOT_FOUND,      "Thing or category not found").into_response(),
             AppError::AccountNotFound               => (StatusCode::NOT_FOUND,      "Account not found").into_response(),
             AppError::DuplicateRecord               => (StatusCode::CONFLICT,       "Duplicate record").into_response(),

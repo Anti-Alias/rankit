@@ -46,11 +46,7 @@ pub struct FinishPollRequest {
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
 pub enum Preference { A, B }
 
-pub async fn start(
-    state: State<AppState>,
-    claims: Extension<account::Claims>,
-    request: Json<StartPollRequest>
-) -> JsonResult<StartPollResponse> {
+pub async fn start(state: State<AppState>, claims: Extension<account::Claims>, request: Json<StartPollRequest>) -> JsonResult<StartPollResponse> {
 
     log::trace!("Getting category {}", request.category_id);
     let category: Option<Category> = sqlx::query_as("SELECT id, name FROM category WHERE id=$1 AND deleted is NULL")

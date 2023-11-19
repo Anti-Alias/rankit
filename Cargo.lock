@@ -1835,6 +1835,7 @@ dependencies = [
  "axum",
  "axum-auth",
  "axum-test-helper",
+ "base64 0.21.5",
  "chrono",
  "derive_more",
  "dotenvy",

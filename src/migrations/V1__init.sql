@@ -23,12 +23,14 @@ CREATE TABLE category (
 );
 
 CREATE TABLE rank(
+    id              serial PRIMARY KEY,
     thing_id        integer NOT NULL REFERENCES thing(id),
     category_id     integer NOT NULL REFERENCES category(id),
     score           double precision NOT NULL DEFAULT 0.0,
     run             integer NOT NULL,
     shuffle         real NOT NULL DEFAULT RANDOM(),
-    UNIQUE (thing_id, category_id   )
+    deleted         timestamptz,
+    UNIQUE (thing_id, category_id)
 );
 
 CREATE TABLE poll (
@@ -50,6 +52,7 @@ CREATE INDEX ON rank(thing_id);
 CREATE INDEX ON rank(category_id);
 CREATE INDEX ON rank(score);
 CREATE INDEX ON rank(run, shuffle);
+CREATE INDEX ON rank(deleted);
 
 COMMENT ON TYPE role IS
 'The set of permissions an account has.'

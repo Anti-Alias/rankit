@@ -108,26 +108,37 @@ pub async fn create(state: State<AppState>, mut multipart: Multipart) -> JsonRes
 pub async fn delete(state: State<AppState>, path: Path<i32>) -> Result<StatusCode, AppError> {
     let thing_id = path.0;
     
-    // Deletes image associated with thing from file store.
-    log::trace!("Deleting thing from file store");
-    let thing_image: Option<(String,)> = sqlx::query_as("SELECT file FROM thing WHERE id=$1 AND deleted IS NULL")
+    log::trace!("Getting thing {thing_id} from DB");
+    let thing_file: Option<(String,)> = sqlx::query_as("SELECT file FROM thing WHERE id=$1 AND deleted IS NULL")
         .bind(thing_id)
         .fetch_optional(&state.pool)
         .await?;
-    let Some(thing_image) = thing_image else {
+    let Some(thing_image) = thing_file else {
         return Err(AppError::ThingNotFound);
     };
+    
+    let mut transaction = state.pool.begin().await?;
+    let conn = transaction.acquire().await?;
+
+    log::trace!("Deleting thing {thing_id} from DB");
+    sqlx::query("UPDATE thing SET deleted=NOW() WHERE id=$1 AND deleted IS NULL")
+        .bind(thing_id)
+        .execute(&mut *conn)
+        .await?;
+
+    log::trace!("Deleting ranks associated with thing {thing_id}");
+    sqlx::query("UPDATE rank SET deleted=NOW() WHERE thing_id=$1 AND deleted IS NULL")
+        .bind(thing_id)
+        .execute(conn)
+        .await?;
+
+    log::trace!("Deleting thing {thing_id} from file store");
     let thing_image = thing_image.0;
     if let Err(err) = state.file_store.delete(&thing_image).await {
         log::error!("Failed to delete image {thing_image}: {err}");
     }
 
-    // Deletes thing from DB
-    log::trace!("Deleting thing from DB");
-    sqlx::query("UPDATE thing SET deleted=NOW() WHERE id=$1 AND deleted IS NULL")
-        .bind(thing_id)
-        .execute(&state.pool)
-        .await?;
+    transaction.commit().await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
