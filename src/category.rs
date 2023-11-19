@@ -45,6 +45,29 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+
+/// Deletes a category.
+pub async fn delete(state: State<AppState>, path: Path<i32>) -> Result<StatusCode, AppError> {
+    let category_id = path.0;
+
+    // Checks that category exists
+    let category_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM category WHERE id=$1 AND deleted IS NULL")
+        .bind(category_id)
+        .fetch_one(&state.pool)
+        .await?;
+    if category_count.0 == 0 {
+        return Err(AppError::CategoryNotFound);
+    }
+
+    // Deletes category
+    sqlx::query("UPDATE category SET deleted=NOW() WHERE id=$1 AND deleted IS NULL")
+        .bind(&category_id)
+        .execute(&state.pool)
+        .await
+        .map_err(|_| AppError::CategoryNotFound)?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
 /// Gets a single category.
 pub async fn single(state: State<AppState>, path: Path<i32>) -> JsonResult<Category> {
     let category: Option<Category> = sqlx::query_as("SELECT id, name FROM category WHERE id=$1 AND deleted IS NULL")

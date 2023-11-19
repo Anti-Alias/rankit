@@ -44,6 +44,7 @@ pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error>
         .route("/thing",                post(thing::create))        // Creates a new Thing.
         .route("/thing/:id",            delete(thing::delete))      // Deletes a Thing.
         .route("/category",             post(category::create))     // Creates a new Category.
+        .route("/category/:id",         delete(category::delete))   // Deletes a Category.
         .route("/rank",                 post(rank::create))         // Creates a new Rank for a Thing in a Category.
         .route_layer(authorize_admin)                               // Above routes require admin or root authorization.
         .route("/poll/start",           put(poll::start))           // Puts current account into a "polling state" for a particular category.
