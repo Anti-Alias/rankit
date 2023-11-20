@@ -13,8 +13,9 @@ use jsonwebtoken::{EncodingKey, DecodingKey};
 use regex::Regex;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use crate::account::create_root_account;
+use crate::email::{DynEmailService, EmailServiceError};
 use crate::{account, thing, env, category, rank, migrate};
-use crate::file_store::{DynFileStore, FileStoreError};
+use crate::file::{DynFileService, FileServiceError};
 
 
 /// Creates application router.
@@ -55,6 +56,7 @@ pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error>
         // Above routes require authentication.
         .route_layer(authenticate)
         .route("/account",                  post(account::create))      // Creates a new account.
+        .route("/account/verify/:token",    post(account::verify))      // Verifies an account.
         .route("/account/login",            post(account::login))       // Logs in an account and return a Claims JWT.
         .route("/things",                   get(thing::list))           // Gets all Things.
         .route("/thing/:id",                get(thing::single))         // Gets a single Thing.
@@ -79,32 +81,37 @@ pub struct AppState(Arc<AppStateInner>);
 
 impl AppState {
     pub async fn from_env() -> Result<Self, StartupError> {
-        log::info!("Connecting to DB");
-        let file_store = DynFileStore::filesystem("assets");
-        let pg_str: String = read_var(env::APP_DB)?;
-        let claims_duration: u64 = read_var(env::APP_CLAIMS_DURATION)?;
-        let claims_duration = Duration::from_secs(claims_duration);
-        let claims_secret: String = read_var(env::APP_CLAIMS_DURATION)?;
-        let claims_secret = claims_secret.as_bytes();
-        let pool = PgPoolOptions::new().max_connections(32).connect(&pg_str).await?;
-        let typ: AppType = read_var(env::APP_TYPE)?;
+        let app_type: AppType = read_var(env::APP_TYPE)?;
+        let (file_store, email_service) = match app_type {
+            AppType::Local => (DynFileService::filesystem("assets"), DynEmailService::filesystem("emails")),
+            AppType::Aws => return Err(StartupError::AppTypeNotYetSupported(app_type)),
+        };
+        let pg_str: String                  = read_var(env::APP_DB)?;
+        let claims_duration: u64            = read_var(env::APP_CLAIMS_DURATION)?;
+        let claims_duration                 = Duration::from_secs(claims_duration);
+        let claims_secret: String           = read_var(env::APP_CLAIMS_DURATION)?;
+        let email_verification_url: String  = read_var(env::APP_EMAIL_VERIFICATION_URL)?;
+        let claims_secret                   = claims_secret.as_bytes();
+        let pool                            = PgPoolOptions::new().max_connections(32).connect(&pg_str).await?;
         let state = AppStateInner {
-            file_store,
+            file_service: file_store,
+            email_service,
             claims_duration,
             claims_encoding_key: EncodingKey::from_secret(claims_secret),
             claims_decoding_key: DecodingKey::from_secret(claims_secret),
             max_image_width: 512,
             max_image_height: 512,
             thing_name_pattern: Regex::new(r"^[a-zA-Z0-9_]+$").unwrap(),
+            email_verification_url,
             pool,
-            typ
+            typ: app_type
         };
         Ok(Self(Arc::new(state)))
     }
 }
 
 /// Metadata about the location in which the application is hosted.
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Display, Debug)]
 pub enum AppType { Local, Aws }
 impl FromStr for AppType {
     type Err = ();
@@ -119,13 +126,15 @@ impl FromStr for AppType {
 
 /// Inner value of an [`AppState`].
 pub struct AppStateInner {
-    pub file_store: DynFileStore,
+    pub file_service: DynFileService,
+    pub email_service: DynEmailService,
     pub claims_duration: Duration,
     pub claims_encoding_key: EncodingKey,
     pub claims_decoding_key: DecodingKey,
     pub max_image_width: u32,
     pub max_image_height: u32,
     pub thing_name_pattern: Regex,
+    pub email_verification_url: String,
     pub pool: PgPool,
     pub typ: AppType
 }
@@ -140,7 +149,10 @@ pub enum StartupError {
     #[display(fmt="Failed to parse variable '{_0}'")]
     FailedParsingVar(#[error(not(source))] String),
     #[display(fmt="SQLX Error '{_0}'")]
-    SqlxError(sqlx::Error)
+    SqlxError(sqlx::Error),
+    #[display(fmt="AppType {_0} not yet supported")]
+    #[from(ignore)]
+    AppTypeNotYetSupported(#[error(not(source))] AppType)
 }
 
 
@@ -153,6 +165,7 @@ pub enum AppError {
     BadThingName,
     CannotModifyRootAccountRole,
     MissingPassword,
+    InvalidVerificationToken,
     BadRequest,
     MissingEmailOrUsername,
     MissingAuthHeader,
@@ -165,6 +178,7 @@ pub enum AppError {
     ThingNotFound,
     RankNotFound,
     AccountNotFound,
+    AccountNotVerified,
     ThingOrCategoryNotFound,
     DuplicateRecord,
     NotEnoughThings,
@@ -172,7 +186,8 @@ pub enum AppError {
     MultipartError(axum::extract::multipart::MultipartError),
     SqlxError(sqlx::Error),
     PasswordHashError(scrypt::password_hash::Error),
-    FileStoreError(FileStoreError),
+    FileServiceError(FileServiceError),
+    EmailServiceError(EmailServiceError),
     #[from(ignore)]
     InternalServerError(#[error(not(source))] &'static str)
 }
@@ -185,6 +200,7 @@ impl IntoResponse for AppError {
             AppError::BadThingName                  => (StatusCode::BAD_REQUEST,    "Bad thing name").into_response(),
             AppError::CannotModifyRootAccountRole   => (StatusCode::BAD_REQUEST,    "Cannot modify role of root account").into_response(),
             AppError::MissingPassword               => (StatusCode::BAD_REQUEST,    "Missing password").into_response(),
+            AppError::InvalidVerificationToken      => (StatusCode::BAD_REQUEST,    "Invalid verification token").into_response(),
             AppError::BadRequest                    => (StatusCode::BAD_REQUEST,    "Bad request").into_response(),
             AppError::MissingEmailOrUsername        => (StatusCode::UNAUTHORIZED,   "Missing email or username").into_response(),
             AppError::MissingAuthHeader             => (StatusCode::UNAUTHORIZED,   "Missing auth header").into_response(),
@@ -198,6 +214,7 @@ impl IntoResponse for AppError {
             AppError::RankNotFound                  => (StatusCode::NOT_FOUND,      "Rank not found").into_response(),
             AppError::ThingOrCategoryNotFound       => (StatusCode::NOT_FOUND,      "Thing or category not found").into_response(),
             AppError::AccountNotFound               => (StatusCode::NOT_FOUND,      "Account not found").into_response(),
+            AppError::AccountNotVerified            => (StatusCode::CONFLICT,       "Account not verified").into_response(),
             AppError::DuplicateRecord               => (StatusCode::CONFLICT,       "Duplicate record").into_response(),
             AppError::NotEnoughThings               => (StatusCode::CONFLICT,       "Not enough things in category to compare").into_response(),
             AppError::NotInPollingState             => (StatusCode::CONFLICT,       "Account not in a polling state").into_response(),
@@ -215,8 +232,12 @@ impl IntoResponse for AppError {
                 log::error!("Password Hash Error: {error:?}");
                 (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
             },
-            AppError::FileStoreError(error) => {
-                log::error!("File store error: {error:?}");
+            AppError::FileServiceError(error) => {
+                log::error!("File service error: {error:?}");
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+            },
+            AppError::EmailServiceError(error) => {
+                log::error!("Email service error: {error:?}");
                 (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
             },
             AppError::InternalServerError(msg) => {
@@ -227,6 +248,7 @@ impl IntoResponse for AppError {
     }
 }
 
+/// Reads and parses an environment variable.
 pub fn read_var<T: FromStr>(var_name: &str) -> Result<T, StartupError> {
     let Ok(value) = dotenvy::var(var_name) else {
         return Err(StartupError::MissingVar(var_name.into()));

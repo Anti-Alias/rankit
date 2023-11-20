@@ -1,13 +1,16 @@
+use axum::extract::Path;
 use axum_auth::AuthBasic;
+use base64::{Engine as _, engine::general_purpose};
 use jsonwebtoken::{encode, decode, Header, Validation, DecodingKey};
 use axum::{Json, extract::State, middleware::Next};
 use axum::response::{Response, IntoResponse};
 use axum::http::{header, Request};
+use rand::Rng;
 use reqwest::StatusCode;
 use std::time::Duration;
 use chrono::Utc;
 use scrypt::{password_hash::{rand_core::OsRng, SaltString, PasswordHasher, PasswordHash, PasswordVerifier}, Scrypt};
-use sqlx::{PgPool, FromRow};
+use sqlx::{PgPool, FromRow, Acquire};
 use serde::{Deserialize, Serialize};
 use tokio::task;
 use crate::{JsonResult, AppState, AppError};
@@ -104,39 +107,80 @@ pub struct CreateResponse {
     pub email: String,
 }
 
-/// Request to login to an existing account.
-#[derive(Serialize, Deserialize, Debug)]
-pub struct LoginRequest {
-    pub name: Option<String>,
-    pub email: Option<String>,
-    pub password: String
-}
-
 /// Creates an account.
 pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> JsonResult<CreateResponse> {
+    
     let state = state.0;
     let request = request.0;
     
     // Checks for duplicate accounts.
-    let account_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM account WHERE email=$1 OR name=$2 AND deleted IS NULL")
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM account WHERE email=$1 OR name=$2 AND deleted IS NULL")
         .bind(&request.email)
         .bind(&request.name)
         .fetch_one(&state.pool)
         .await?;
-    if account_count.0 != 0 {
+    if count.0 != 0 {
         return Err(AppError::DuplicateRecord);
     }
 
-    // Inserts new account and returns response.
+    let mut transaction = state.pool.begin().await?;
+    let conn = transaction.acquire().await?;
+
+    // Inserts account into db.
     let password_hash = generate_password_hash(request.password).await?;
-    let resp_body = sqlx::query_as("INSERT INTO account (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email")
+    let response: CreateResponse = sqlx::query_as("INSERT INTO account (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email")
         .bind(&request.name)
         .bind(&request.email)
         .bind(password_hash)
-        .fetch_one(&state.pool)
+        .fetch_one(&mut *conn)
         .await?;
-    let resp_body = Json(resp_body);
-    Ok((StatusCode::CREATED, resp_body))
+
+    // Generates and inserts verification code for account
+    let verification_token = generate_verification_token();
+    sqlx::query("INSERT INTO verification_token (account_id, token) VALUES ($1,$2)")
+        .bind(response.id)
+        .bind(&verification_token)
+        .execute(&mut *conn)
+        .await?;
+
+    // Sends verification email.
+    let email_subject = String::from("Email Verification");
+    let verification_url = state.email_verification_url.replace("{verification_token}", &verification_token);
+    let email_body = format!("Verify your account by visiting {}", verification_url);
+    state.email_service.send(request.email, email_subject, email_body).await?;
+    transaction.commit().await?;
+    Ok((StatusCode::CREATED, Json(response)))
+}
+
+/// Verifies an account.
+pub async fn verify(state: State<AppState>, path: Path<String>) -> Result<StatusCode, AppError> {
+    
+    let state = state.0;
+    let request_token = path.0;
+
+    // Gets matching token
+    let account_id: Option<(i32,)> = sqlx::query_as("SELECT account_id FROM verification_token WHERE token = $1")
+        .bind(request_token)
+        .fetch_optional(&state.pool)
+        .await?;
+    let Some(account_id) = account_id else {
+        return Err(AppError::InvalidVerificationToken);
+    };
+    let account_id = account_id.0;
+
+    // Verifies account
+    sqlx::query("UPDATE account SET verified = true WHERE id = $1")
+        .bind(account_id)
+        .execute(&state.pool)
+        .await?;
+
+    // Deletes token
+    sqlx::query("DELETE FROM verification_token WHERE account_id = $1")
+        .bind(account_id)
+        .execute(&state.pool)
+        .await?;
+
+    Ok(StatusCode::NO_CONTENT)
 }
 
 /// Route that logs in an account.
@@ -147,12 +191,15 @@ pub async fn login(state: State<AppState>, auth: AuthBasic) -> Result<String, Ap
     let Some(login_password) = login_password else {
         return Err(AppError::MissingPassword);
     };
-    let result: Option<(i32, String, String, Role, String)> = sqlx::query_as("SELECT id, email, name, role, password FROM account WHERE name=$1 AND deleted IS NULL")
+    let result: Option<(i32, String, String, Role, bool, String)> = sqlx::query_as("SELECT id, email, name, role, verified, password FROM account WHERE name=$1 AND deleted IS NULL")
         .bind(login_email)
         .fetch_optional(&state.pool).await?;
-    let Some((id, email, name, role, password)) = result else {
+    let Some((id, email, name, role, verified, password)) = result else {
         return Err(AppError::NoMatchingAccount);
     };
+    if !verified {
+        return Err(AppError::AccountNotVerified);
+    }
 
     // Checks that passwords match.
     match verify_password(login_password, password).await {
@@ -201,7 +248,7 @@ pub async fn create_root_account(name: String, email: String, password: String, 
 
     // Creates root account.
     let password_hash = generate_password_hash(password).await?;
-    sqlx::query("INSERT INTO account (name, email, password, role) VALUES ($1, $2, $3, 'root')")
+    sqlx::query("INSERT INTO account (name, email, password, role, verified) VALUES ($1, $2, $3, 'root', true)")
         .bind(name)
         .bind(email)
         .bind(password_hash)
@@ -273,4 +320,9 @@ fn skip_bearer(auth_token: &str) -> Result<&str, AppError> {
         return Err(AppError::Unauthenticated);
     }
     Ok(auth_token[7..].trim())
+}
+
+fn generate_verification_token() -> String {
+    let bytes = rand::thread_rng().gen::<[u8; 32]>();
+    general_purpose::URL_SAFE.encode(bytes)
 }

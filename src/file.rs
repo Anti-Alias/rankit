@@ -3,37 +3,37 @@ use regex::Regex;
 use derive_more::{From, Display, Deref, DerefMut};
 use axum::async_trait;
 
-/// Helpful dynamic wrapper around a [`FileStore`].
+/// Helpful dynamic wrapper around a [`FileService`].
 #[derive(Deref, DerefMut)]
-pub struct DynFileStore(Box<dyn FileStore>);
-impl DynFileStore {
+pub struct DynFileService(Box<dyn FileService>);
+impl DynFileService {
     pub fn filesystem(root: impl Into<PathBuf>) -> Self {
-        Self(Box::new(FilesystemFileStore::new(root)))
+        Self(Box::new(FilesystemFileService::new(root)))
     }
 }
 
 /// A simple interface for file storage.
 #[async_trait]
-pub trait FileStore: Send + Sync + 'static {
-    async fn create(&self, path: &str, bytes: &[u8]) -> Result<(), FileStoreError>;
-    async fn delete(&self, path: &str) -> Result<(), FileStoreError>;
+pub trait FileService: Send + Sync + 'static {
+    async fn create(&self, path: &str, bytes: &[u8]) -> Result<(), FileServiceError>;
+    async fn delete(&self, path: &str) -> Result<(), FileServiceError>;
 }
 
 #[derive(From, Display, Debug)]
-pub enum FileStoreError {
+pub enum FileServiceError {
     IOError(std::io::Error),
     #[from(ignore)]
     InvalidFileName(String)
 }
-impl Error for FileStoreError {}
+impl Error for FileServiceError {}
 
-/// Implementation of [`FileStore`] that uses the local filesystem.
+/// Implementation of [`FileService`] that uses the local filesystem.
 /// Useful for testing, though should not to be used in production systems.
-pub struct FilesystemFileStore {
+pub struct FilesystemFileService {
     root: PathBuf,
     file_pattern: Regex,
 }
-impl FilesystemFileStore {
+impl FilesystemFileService {
     pub fn new(root: impl Into<PathBuf>) -> Self {
         Self {
             root: root.into(),
@@ -43,12 +43,12 @@ impl FilesystemFileStore {
 }
 
 #[async_trait]
-impl FileStore for FilesystemFileStore {
+impl FileService for FilesystemFileService {
 
-    async fn create(&self, file: &str, bytes: &[u8]) -> Result<(), FileStoreError> {
+    async fn create(&self, file: &str, bytes: &[u8]) -> Result<(), FileServiceError> {
         log::trace!("Creating file {file}");
         if !self.file_pattern.is_match(file) {
-            return Err(FileStoreError::InvalidFileName(file.into()));
+            return Err(FileServiceError::InvalidFileName(file.into()));
         }
         let mut full_path = PathBuf::from(&self.root);
         full_path.push(file);
@@ -57,10 +57,10 @@ impl FileStore for FilesystemFileStore {
         Ok(())
     }
 
-    async fn delete(&self, file: &str) -> Result<(), FileStoreError> {
+    async fn delete(&self, file: &str) -> Result<(), FileServiceError> {
         log::trace!("Deleting file {file}");
         if !self.file_pattern.is_match(file) {
-            return Err(FileStoreError::InvalidFileName(file.into()));
+            return Err(FileServiceError::InvalidFileName(file.into()));
         }
         let mut full_path = PathBuf::from(&self.root);
         full_path.push(file);

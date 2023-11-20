@@ -98,7 +98,7 @@ pub async fn create(state: State<AppState>, mut multipart: Multipart) -> JsonRes
         .bind(&file_path)
         .fetch_one(conn)
         .await?;
-    state.file_store.create(&file_path, &jpeg_bytes).await?;
+    state.file_service.create(&file_path, &jpeg_bytes).await?;
     transaction.commit().await?;
 
     // Done
@@ -134,7 +134,7 @@ pub async fn delete(state: State<AppState>, path: Path<i32>) -> Result<StatusCod
 
     log::trace!("Deleting thing {thing_id} from file store");
     let thing_image = thing_image.0;
-    if let Err(err) = state.file_store.delete(&thing_image).await {
+    if let Err(err) = state.file_service.delete(&thing_image).await {
         log::error!("Failed to delete image {thing_image}: {err}");
     }
 

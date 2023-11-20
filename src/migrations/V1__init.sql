@@ -6,7 +6,13 @@ CREATE TABLE account (
     email       text NOT NULL UNIQUE,
     password    text NOT NULL,
     role        role NOT NULL DEFAULT 'basic',
+    verified    boolean NOT NULL DEFAULT false,
     deleted     timestamptz
+);
+
+CREATE TABLE verification_token (
+    account_id  integer NOT NULL REFERENCES account(id) UNIQUE,
+    token       text NOT NULL UNIQUE
 );
 
 CREATE TABLE thing (

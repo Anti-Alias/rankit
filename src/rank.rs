@@ -65,7 +65,6 @@ impl RankedThing {
 /// Gives it an initial score.
 pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> JsonResult<CreateResponse> {
 
-    // Checks for the existance of the specified thing and category.
     log::trace!("Checking for existance of thing {} and category {}", request.thing_id, request.category_id);
     let thing_and_cat_exist: (bool,) = sqlx::query_as(THING_AND_CATEGORY_EXIST)
         .bind(request.thing_id)
@@ -76,7 +75,6 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
         return Err(AppError::ThingOrCategoryNotFound);
     }
 
-    // Fetches existing rank state.
     log::trace!("Checking for existing rank state");
     let current_run = get_run_of_category(&state, request.category_id);
     let rank_count = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) from rank WHERE thing_id=$1 AND category_id=$2 AND deleted IS NULL")
@@ -84,15 +82,12 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
         .bind(request.category_id)
         .fetch_one(&state.pool);
     let (current_run, rank_count) = try_join!(current_run, rank_count)?;
-
-    // Fails on duplicate rank.
     if rank_count.0 != 0 {
         return Err(AppError::DuplicateRecord);
     }
 
-    // Generates and inserts a new rank.
-    // "Thing" will be "comparable" in the next "run".
-    let rank: Rank = sqlx::query_as("INSERT INTO rank (thing_id, category_id, score, run) VALUES ($1,$2,$3,$4) RETURNING id, thing_id, category_id, score")
+    log::trace!("Inserting rank for thing {}, and category {}", request.thing_id, request.category_id);
+    let rank: Rank = sqlx::query_as("INSERT INTO rank (thing_id, category_id, score, run) VALUES ($1,$2,$3,$4) RETURNING id,thing_id,category_id,score,run")
         .bind(request.thing_id)
         .bind(request.category_id)
         .bind(SCORE_INITIAL)

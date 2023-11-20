@@ -4,7 +4,8 @@ pub mod migrate;
 pub mod app;
 pub mod thing;
 pub mod category;
-pub mod file_store;
+pub mod file;
 pub mod rank;
+pub mod email;
 
 use app::*;
