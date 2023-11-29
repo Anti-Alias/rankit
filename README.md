@@ -19,8 +19,8 @@ In the fruit category, orange reigns supreme. This sort of outcome is uncommon, 
 # Accounts
 People visiting the site anonymously can read polling data, but cannot participate in polls. One must register an account to do so. This is done to mitigate spam. Accounts can have one of the following roles: **Basic**, **Admin** and **Root**.
 
-* **Basic** accounts can read polling data participate in polls.
+* **Basic** accounts can read polling data and participate in polls.
 
 * **Admin** inherits from **Basic** and can create new **Things**, **Categories** and **Ranks** (scored associations of **Things** and **Categories**).
 
-* **Root** inherits from **Admin** and can set the roles of other accounts. There is always exactly one root user which is created the first time the API server starts. 
+* **Root** inherits from **Admin** and can set the roles of other accounts. There is always exactly one root account which is created the first time the API server starts. 
