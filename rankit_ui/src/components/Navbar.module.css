@@ -3,16 +3,20 @@
     align-self: stretch;
     justify-content: center;
     margin: 0;
-    padding: 10px;
-    color: var(--color-text-navbar);
     background-color: var(--color-navbar);
     filter: var(--filter-shadow);
     z-index: 1;
 }
 
+.Navbar h2 {
+    margin: 0;
+}
+
 .inner {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-items: center;
     width: 53%;
 }
 
@@ -20,18 +24,62 @@
     margin: 0;
 }
 
-.right {
-    display: flex;
-    align-items: center;
-}
-
 .left {
     display: flex;
     align-items: center;
+    height: 38px;
 }
 
-.loginSignup {
+.center {
+    display: flex;
+    align-items: center;
+    height: 38px;
+}
+
+.right {
+    display: flex;
+    align-items: center;
+    height: 38px;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    padding: 0 10px 0 10px;
+    cursor: pointer;
+    height: calc(100% - 2px);
+}
+
+.option:hover {
+    box-shadow: 0 2px 0 var(--color-text);
+}
+
+.login {
+    width: 60px;
+    border-radius: 3px;
+    text-align: center;
+    padding: 5px;
     margin: 5px;
     font-weight: bold;
     cursor: pointer;
+}
+
+.login:hover {
+    color: var(--color-text-alt);
+    background-color: var(--color-green);
+}
+
+.signup {
+    width: 70px;
+    border-radius: 3px;
+    text-align: center;
+    padding: 5px;
+    margin: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.signup:hover {
+    color: var(--color-text-alt);
+    background-color: var(--color-purple);
 }

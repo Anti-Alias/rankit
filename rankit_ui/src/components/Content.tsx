@@ -1,13 +1,12 @@
 import styles from './Content.module.css';
 
-export default () => (
+const Content = () => (
     <div className={styles.Content}>
-
         <h1>About</h1>
         <p className={styles.paragraph}>
             Thingelo is a site dedicated to rating anything and everything in the universe.
             Movies, games, paintings, songs, food, etc.
-            Rather than using a traditional rating scale, Thingelo uses the ELO scoring system to estimate the quality of its content.
+            Rather than using a traditional rating scale, Thingelo uses the ELO rating system to estimate the quality of its content.
             When using the site, a user is prompted with two <b>Things</b> belonging to the same <b>Category</b>.
             The user then selects their preference, and the chosen <b>Thing's</b> ELO score goes up while the other's goes down.
             (Note: A <b>Thing's</b> ELO score in one <b>Category</b> may be completely different in another.)
@@ -30,6 +29,7 @@ export default () => (
             <u>Movie</u> is a <b>Category</b>.&nbsp;
             <u>Planet</u> is a <b>Category</b>.
             In a single <b>Category</b>, a user can list all of the <b>Things</b> belonging to it, in the order of their ELO scores.
+            THIS is how the quality of a <b>Thing</b> is derived!
         </p>
 
         <h1>Polls</h1>
@@ -45,3 +45,5 @@ export default () => (
         </div>
     </div>
 );
+
+export default Content;

@@ -1,16 +1,29 @@
 import styles from './Navbar.module.css';
 
-export default () => (
+const Navbar = () => (
     <div className={styles.Navbar}>
         <div className={styles.inner}>
+
+            {/* Title */}
             <div className={styles.left}>
-                <h2 className={styles.title}>Thingelo</h2>
+                <h2>Thingelo</h2>
             </div>
+
+            {/* Option list */}
+            <div className={styles.center}>
+                <div className={styles.option}>About</div>
+                <div className={styles.option}>Things</div>
+                <div className={styles.option}>Categories</div>
+            </div>
+            
+            {/* Login / Sign up */}
             <div className={styles.right}>
-                <div className={styles.loginSignup}>Log in</div>
+                <div className={styles.login}>Log in</div>
                 |
-                <div className={styles.loginSignup}>Sign Up</div>
+                <div className={styles.signup}>Sign Up</div>
             </div>
         </div>
     </div>
 );
+
+export default Navbar;

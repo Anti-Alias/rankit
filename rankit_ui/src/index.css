@@ -1,13 +1,13 @@
 :root {
-  --color-primary:        rgb(221, 221, 221);
-  --color-text-primary:   black;
-  --color-text-secondary: white;
-  --color-button:         rgb(178, 87, 206);
-  --color-background:     rgb(228, 228, 228);
-  --color-navbar:         white;
-  --color-text-navbar:    black;
-  --color-text-highlight: #ce00ce;
-  --filter-shadow:          drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
+  --color-text:               black;
+  --color-text-alt:           white;
+  --color-purple:             rgb(178, 87, 206);
+  --color-purple-light:       rgb(193, 119, 216);
+  --color-green:              rgb(53, 158, 71);
+  --color-green-light:        rgb(83, 224, 106);
+  --color-background:         rgb(235, 235, 235);
+  --color-navbar:             white;
+  --filter-shadow:            drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
 }
 
 body {
@@ -15,6 +15,6 @@ body {
   font-family: Helvetica;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: var(--color-text-primary);
+  color: var(--color-text);
   background-color: var(--color-background);
 }

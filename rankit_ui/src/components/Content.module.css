@@ -10,13 +10,15 @@
 }
 
 .Content > h1 {
+    font-size: 25px;
     margin: 0;
-    margin-top: 20px;
+    margin-top: 30px;
 }
 
 .paragraph {
     font-size: 18px;
     line-height: 30px;
+    margin: 8px;
 }
 
 .row {
@@ -29,10 +31,11 @@
     border-radius: 5px;
     padding: 10px;
     margin: 0px;
-    color: var(--color-text-secondary);
-    background-color: var(--color-button);
+    color: var(--color-text-alt);
+    background-color: var(--color-purple);
 }
 
 .button:hover {
     cursor: pointer;
+    background-color: var(--color-purple-light);
 }
