@@ -18,3 +18,20 @@ body {
   color: var(--color-text);
   background-color: var(--color-background);
 }
+
+a:link {
+  color: inherit;
+  text-decoration: inherit;
+}
+a:visited {
+  color: inherit;
+  text-decoration: inherit;
+}
+a:hover {
+  color: inherit;
+  text-decoration: inherit;
+}
+a:active {
+  color: inherit;
+  text-decoration: inherit;
+}

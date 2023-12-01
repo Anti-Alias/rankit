@@ -42,6 +42,12 @@
     height: 38px;
 }
 
+.site {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
 .option {
     display: flex;
     align-items: center;
