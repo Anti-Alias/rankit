@@ -1,38 +1,24 @@
-.Content {
-    display: flex;
+.section {
+    display:        flex;
     flex-direction: column;
-    align-items: center;
-    width: 53%;
-    height: 80%;
-    margin: 10px;
-    margin-top: 60px;
-    padding: 0px;
+    align-items:    center;
+    margin-bottom:  20px;
 }
 
-.Content > h1 {
-    font-size: 25px;
-    margin: 0;
-    margin-top: 30px;
-}
-
-.paragraph {
-    font-size: 18px;
-    line-height: 30px;
-    margin: 8px;
-}
-
-.row {
-    display: flex;
+.section > p {
+    font-size:      18px;
+    line-height:    30px;
+    margin:         8px;
 }
 
 .button {
-    align-items: center;
-    filter: var(--filter-shadow);
-    border-radius: 5px;
-    padding: 10px;
-    margin: 0px;
-    color: var(--color-text-alt);
-    background-color: var(--color-purple);
+    text-align:         center;
+    font-weight:        bold;
+    border-radius:      5px;
+    padding:            10px;
+    background-color:   var(--color-purple);
+    color:              var(--color-text-alt);
+    filter:             var(--filter-shadow);
 }
 
 .button:hover {
