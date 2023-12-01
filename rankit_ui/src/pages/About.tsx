@@ -1,7 +1,7 @@
-import styles from './Content.module.css';
+import styles from './About.module.css';
 
-const Content = () => (
-    <div className={styles.Content}>
+const About = () => (
+    <>
         <h1>About</h1>
         <p className={styles.paragraph}>
             Thingelo is a site dedicated to rating anything and everything in the universe.
@@ -43,7 +43,7 @@ const Content = () => (
                 <b>Begin Poll</b>
             </div>
         </div>
-    </div>
+    </>
 );
 
-export default Content;
+export default About;
