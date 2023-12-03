@@ -6,7 +6,7 @@
     justify-content: center;
     margin: 0;
     background-color: var(--color-navbar);
-    filter: var(--filter-shadow);
+    filter: var(--filter-navbar);
     z-index: 1;
 }
 

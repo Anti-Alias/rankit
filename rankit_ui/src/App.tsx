@@ -1,5 +1,6 @@
 import styles from './App.module.css';
 import About from './pages/About';
+import SignUp from './pages/SignUp';
 import Navbar from './components/Navbar';
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 
@@ -36,15 +37,6 @@ const Categories = () => (
     <p>Under construction</p>
   </>
 );
-
-
-const SignUp = () => (
-  <>
-    <h1>Sign up</h1>
-    <p>Under construction</p>
-  </>
-);
-
 
 const LogIn = () => (
   <>

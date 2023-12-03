@@ -6,8 +6,10 @@
   --color-green:              rgb(53, 158, 71);
   --color-green-light:        rgb(83, 224, 106);
   --color-background:         rgb(235, 235, 235);
+  --color-form:               white;
   --color-navbar:             white;
-  --filter-shadow:            drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
+  --filter-navbar:            drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
+  --filter-card:              drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
 }
 
 body {
