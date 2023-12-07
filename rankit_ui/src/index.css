@@ -10,6 +10,7 @@
   --color-navbar:             white;
   --filter-navbar:            drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
   --filter-card:              drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+  --transition-time:          0.15s;
 }
 
 body {

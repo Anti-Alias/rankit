@@ -18,6 +18,7 @@
     padding:            10px;
     background-color:   var(--color-purple);
     color:              var(--color-text-alt);
+    transition:         all var(--transition-time);
 }
 
 .button:hover {
