@@ -1,10 +1,49 @@
 .SignUp {
     display:            flex;
     flex-direction:     column;
-    align-items:        center;
     border-radius:      10px;
-    padding:            10px;
-    width:              512px;
+    padding:            40px 60px 40px 60px;
+    width:              350px;
     background-color:   var(--color-form);
     filter:             var(--filter-card);
+}
+
+/** Changes color of text within <Link> elements*/
+.SignUp a {
+    color: var(--color-link);
+    font-weight: bold;
+}
+
+.SignUp input {
+    margin: 4px 0 0 0;
+    border-radius: 5px;
+    border: solid var(--color-border);
+    border-width: 2px;
+    font-size: 18px;
+    width: 100%;
+    height: 30px;
+    outline: 1px solid var(--color-outline);
+    transition: outline-color var(--transition-time);
+}
+
+.SignUp input:focus {
+    outline: 2px solid var(--color-outline-focus);
+}
+
+.inputs {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 20px 0 10px 0;
+    width: 350px;
+}
+
+.inputWrapper {
+    display: flex;
+    flex-direction: column;
+    margin-top: 15px;
+}
+
+.label {
+    font-size: 18px;
 }

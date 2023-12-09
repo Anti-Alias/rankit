@@ -1,0 +1,29 @@
+.Button {
+    border:             none;
+    text-align:         center;
+    font-size:          17px;
+    font-weight:        bold;
+    border-radius:      10px;
+    padding:            15px;
+    background-color:   var(--color-button);
+    color:              var(--color-text-alt);
+    transition:         all var(--transition-time); 
+    cursor:             pointer;
+    filter:             var(--filter-card);
+}
+
+.primary {
+    background-color: var(--color-button);
+}
+
+.primary:hover {
+    background-color: var(--color-button-selected);
+}
+
+.alternate {
+    background-color: var(--color-button-alt);
+}
+
+.alternate:hover {
+    background-color: var(--color-button-alt-selected);
+}

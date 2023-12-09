@@ -1,7 +1,8 @@
-import styles from './App.module.css';
-import About from './pages/About';
-import SignUp from './pages/SignUp';
-import Navbar from './components/Navbar';
+import styles   from './App.module.css';
+import Navbar   from './components/Navbar';
+import About    from './pages/About';
+import SignUp   from './pages/SignUp';
+import LogIn    from './pages/LogIn';
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 
 
@@ -34,13 +35,6 @@ const Things = () => (
 const Categories = () => (
   <>
     <h1>Categories</h1>
-    <p>Under construction</p>
-  </>
-);
-
-const LogIn = () => (
-  <>
-    <h1>Log in</h1>
     <p>Under construction</p>
   </>
 );

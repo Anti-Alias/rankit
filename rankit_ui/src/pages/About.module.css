@@ -16,12 +16,12 @@
     font-weight:        bold;
     border-radius:      5px;
     padding:            10px;
-    background-color:   var(--color-purple);
+    background-color:   var(--color-button);
     color:              var(--color-text-alt);
     transition:         all var(--transition-time);
 }
 
 .button:hover {
     cursor: pointer;
-    background-color: var(--color-purple-light);
+    background-color: var(--color-button-selected);
 }

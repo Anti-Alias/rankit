@@ -1,9 +1,9 @@
 .Navbar {
-    position: sticky;
-    top: 0;
     display: flex;
-    align-self: stretch;
+    position: sticky;
     justify-content: center;
+    align-self: stretch;
+    top: 0;
     margin: 0;
     background-color: var(--color-navbar);
     filter: var(--filter-navbar);
@@ -77,7 +77,7 @@
 .login:hover {
     background-color: var(--color-navbar);
     color: var(--color-text-alt);
-    background-color: var(--color-green);
+    background-color: var(--color-button-alt);
 }
 
 .signup {
@@ -93,5 +93,5 @@
 
 .signup:hover {
     color: var(--color-text-alt);
-    background-color: var(--color-purple);
+    background-color: var(--color-button);
 }

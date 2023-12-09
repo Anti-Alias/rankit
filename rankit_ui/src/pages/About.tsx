@@ -1,4 +1,5 @@
 import styles from './About.module.css';
+import Button from '../components/Button';
 
 const About = () => (<>
 
@@ -45,9 +46,7 @@ const About = () => (<>
             The first is by selecting a specific <b>Category</b> and starting a poll for it.
             The second is by starting a poll in a random <b>Category</b>, which can be done by tapping the button below.
         </p>
-        <div className={styles.button}>
-            Begin Poll
-        </div>
+        <Button>Begin Poll</Button>
     </div>
 </>);
 
