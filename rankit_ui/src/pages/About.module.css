@@ -16,12 +16,12 @@
     font-weight:        bold;
     border-radius:      5px;
     padding:            10px;
-    background-color:   var(--color-button);
-    color:              var(--color-text-alt);
-    transition:         all var(--transition-time);
+    background-color:   var(--colorButton);
+    color:              var(--colorTextAlt);
+    transition:         all var(--transitionTime);
 }
 
 .button:hover {
     cursor: pointer;
-    background-color: var(--color-button-selected);
+    background-color: var(--colorButtonSelected);
 }

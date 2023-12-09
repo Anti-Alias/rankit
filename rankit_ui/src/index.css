@@ -1,19 +1,19 @@
 :root {
-  --color-text:                 black;
-  --color-text-alt:             white;
-  --color-outline:              rgb(172, 172, 172);
-  --color-outline-focus:        rgb(61, 61, 61);
-  --color-button:               rgb(178, 87, 206);
-  --color-button-selected:      rgb(193, 119, 216);
-  --color-button-alt:           rgb(53, 158, 71);
-  --color-button-alt-selected:  rgb(121, 199, 132);
-  --color-link:                 rgb(0, 162, 255);
-  --color-background:           rgb(235, 235, 235);
-  --color-form:                 white;
-  --color-navbar:               white;
-  --filter-navbar:              drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
-  --filter-card:                drop-shadow(2px 2px 1px rgba(0, 0, 0, 0.2));
-  --transition-time:            0.15s;
+  --colorText:                black;
+  --colorTextAlt:             white;
+  --colorOutline:             rgb(172, 172, 172);
+  --colorOutlineFocus:        rgb(61, 61, 61);
+  --colorButton:              rgb(178, 87, 206);
+  --colorButtonSelected:      rgb(193, 119, 216);
+  --colorButtonAlt:           rgb(53, 158, 71);
+  --colorButtonAltSelected:   rgb(121, 199, 132);
+  --colorLink:                rgb(0, 162, 255);
+  --colorBackground:          rgb(235, 235, 235);
+  --colorForm:                white;
+  --colorNavbar:              white;
+  --filterNavbar:             drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
+  --filterCard:               drop-shadow(2px 2px 1px rgba(0, 0, 0, 0.2));
+  --transitionTime:           0.15s;
 }
 
 body {
@@ -21,8 +21,8 @@ body {
   font-family: Helvetica;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: var(--color-text);
-  background-color: var(--color-background);
+  color: var(--colorText);
+  background-color: var(--colorBackground);
 }
 
 h1 {

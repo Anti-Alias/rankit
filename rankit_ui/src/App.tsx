@@ -4,24 +4,30 @@ import About    from './pages/About';
 import SignUp   from './pages/SignUp';
 import LogIn    from './pages/LogIn';
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { Context, createContext } from 'react';
+
+type Theme = 'dark' | 'light';
+const ThemeContext: Context<Theme> = createContext<Theme>('light');
 
 
 /** Main application element */
 const App = () => (
   <div className={styles.App}>
-    <BrowserRouter>
-      <Navbar/>
-      <Routes>
-        <Route path="/" element={<Layout/>}>
-          <Route index              element={<About/>}/>
-          <Route path="login"       element={<LogIn/>}/>
-          <Route path="signup"      element={<SignUp/>}/>
-          <Route path="things"      element={<Things/>}/>
-          <Route path="categories"  element={<Categories/>}/>
-          <Route path="*"           element={<PageNotFound/>}/>
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <ThemeContext.Provider value="light">
+      <BrowserRouter>
+        <Navbar/>
+        <Routes>
+          <Route path="/" element={<Layout/>}>
+            <Route index              element={<About/>}/>
+            <Route path="login"       element={<LogIn/>}/>
+            <Route path="signup"      element={<SignUp/>}/>
+            <Route path="things"      element={<Things/>}/>
+            <Route path="categories"  element={<Categories/>}/>
+            <Route path="*"           element={<PageNotFound/>}/>
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </ThemeContext.Provider>
   </div>
 );
 
