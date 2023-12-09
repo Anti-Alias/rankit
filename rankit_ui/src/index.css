@@ -1,21 +1,3 @@
-:root {
-  --colorText:                black;
-  --colorTextAlt:             white;
-  --colorOutline:             rgb(172, 172, 172);
-  --colorOutlineFocus:        rgb(61, 61, 61);
-  --colorButton:              rgb(178, 87, 206);
-  --colorButtonSelected:      rgb(193, 119, 216);
-  --colorButtonAlt:           rgb(53, 158, 71);
-  --colorButtonAltSelected:   rgb(121, 199, 132);
-  --colorLink:                rgb(0, 162, 255);
-  --colorBackground:          rgb(235, 235, 235);
-  --colorForm:                white;
-  --colorNavbar:              white;
-  --filterNavbar:             drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
-  --filterCard:               drop-shadow(2px 2px 1px rgba(0, 0, 0, 0.2));
-  --transitionTime:           0.15s;
-}
-
 body {
   margin: 0;
   font-family: Helvetica;
