@@ -19,7 +19,7 @@ function Navbar() {
         <div className={styles.Navbar}>
             <div className={styles.inner}>
                 <div className={styles.left}>
-                    <Link to='/' className={styles.site}><h2>Thingelo</h2></Link>
+                    <Link to='/' className={styles.thingelo}><h2>Thingelo</h2></Link>
                 </div>
                 <div className={styles.center}>
                     <Link to='/' className={styles.option}>About</Link>

@@ -44,13 +44,14 @@ function validatePassword(password: string): string | void {
   }
 }
 
+
 const Validator = new FormValidator()
   .addValidator("email", "emailError", validateEmail)
   .addValidator("username", "usernameError", validateUsername)
   .addValidator("password", "passwordError", validatePassword);
 
-function SignUp() {
 
+function SignUp() {
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const success = Validator.validate(event.currentTarget);
@@ -58,7 +59,6 @@ function SignUp() {
       console.log("Valid form!");
     }
   }
-
   return (
     <form className={styles.SignUp} onSubmit={submit} noValidate>
       <h1>Sign Up</h1>

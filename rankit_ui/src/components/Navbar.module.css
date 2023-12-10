@@ -44,10 +44,11 @@
     height: 38px;
 }
 
-.site {
+.thingelo {
     display: flex;
     align-items: center;
     height: 100%;
+    margin-right: 100px;
 }
 
 .option {
