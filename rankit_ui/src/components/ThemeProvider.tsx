@@ -1,5 +1,11 @@
 import { JSX, PropsWithChildren, useState, createContext, useContext } from 'react';
 
+/** Possible theme names */
+type ThemeName = 'light' | 'dark';
+
+/** State type alias */
+type ThemeNameState = [ThemeName, (themeName: ThemeName) => void];
+
 /** CSS properties of a theme. */
 type Theme = {
     colorText:              string;
@@ -18,15 +24,6 @@ type Theme = {
     filterCard:             string;
     transitionTime:         string;
 };
-
-/** Possible theme names */
-type ThemeName = 'light' | 'dark';
-
-/** The current theme used by the site */
-interface ThemeNameState {
-    themeName: ThemeName,
-    setThemeName(name: ThemeName): void,
-}
 
 const LightTheme: Theme = {
     colorText:                'black',
@@ -65,27 +62,20 @@ const DarkTheme: Theme = {
 };
 
 /** Shareable / settable theme name */
-const ThemeNameContext = createContext<ThemeNameState>({
-    themeName: 'light',
-    setThemeName: () => {}
-});
+const ThemeNameContext = createContext<ThemeNameState>(['light', ()=>{}]);
 
-const ThemeProvider = ({ children }: PropsWithChildren<{}>): JSX.Element => {
-    
-    // State
+/** Component that provides a theme name that can be set by child components. */
+function ThemeProvider({ children }: PropsWithChildren<{}>): JSX.Element {
     const [themeName, setThemeName] = useState<ThemeName>('light');
-    const themeState = { themeName, setThemeName };
-
-    // Sets CSS variables using current theme name.
     const theme = themeName === 'light' ? LightTheme : DarkTheme;
-    const rootStyle = document.documentElement.style;
     for(const [propName, propValue] of Object.entries(theme)) {
-        rootStyle.setProperty(`--${propName}`, propValue);
+        document.documentElement.style.setProperty(`--${propName}`, propValue);
     }
 
-    // Renders children
-    return <ThemeNameContext.Provider value={themeState}>{children}</ThemeNameContext.Provider>;
+    return <ThemeNameContext.Provider value={[themeName, setThemeName]}>
+        {children}
+    </ThemeNameContext.Provider>;
 }
 
-export type { ThemeNameState as ThemeProps };
+export { ThemeNameContext, type ThemeNameState };
 export default ThemeProvider;

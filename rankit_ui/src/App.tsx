@@ -7,8 +7,8 @@ import LogIn          from './pages/LogIn';
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 
 /** Main application element */
-const App = () => (
-  <div className={styles.App}>
+function App() {
+  return <div className={styles.App}>
       <BrowserRouter>
         <ThemeProvider>
           <Navbar/>
@@ -25,7 +25,7 @@ const App = () => (
         </ThemeProvider>
       </BrowserRouter>
   </div>
-);
+};
 
 const Things = () => (
   <>

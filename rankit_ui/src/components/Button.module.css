@@ -1,15 +1,24 @@
 .Button {
     border:             none;
     text-align:         center;
-    font-size:          17px;
     font-weight:        bold;
-    border-radius:      10px;
-    padding:            15px;
     background-color:   var(--colorButton);
     color:              var(--colorTextAlt);
     transition:         all var(--transitionTime); 
     cursor:             pointer;
     filter:             var(--filterCard);
+}
+
+.normal {
+    border-radius:  10px;
+    font-size:      17px;
+    padding:        15px;
+}
+
+.small {
+    border-radius:  5px;
+    font-size:      12px;
+    padding:        5px;
 }
 
 .primary {
@@ -20,10 +29,10 @@
     background-color: var(--colorButtonSelected);
 }
 
-.alternate {
+.secondary {
     background-color: var(--colorButtonAlt);
 }
 
-.alternate:hover {
+.secondary:hover {
     background-color: var(--colorButtonAltSelected);
 }
