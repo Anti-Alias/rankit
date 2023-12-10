@@ -22,6 +22,7 @@ type Theme = {
     colorNavbar:            string;
     filterNavbar:           string;
     filterCard:             string;
+    filterButton:           string;
     transitionTime:         string;
 };
 
@@ -40,24 +41,26 @@ const LightTheme: Theme = {
     colorNavbar:              'white',
     filterNavbar:             'drop-shadow(0 0 3px rgba(0, 0, 0, 0.2))',
     filterCard:               'drop-shadow(2px 2px 1px rgba(0, 0, 0, 0.2))',
+    filterButton:             'drop-shadow(2px 2px 1px rgba(0, 0, 0, 0.2))',
     transitionTime:           '0.15s',
 };
 
 const DarkTheme: Theme = {
     colorText:                'white',
-    colorTextAlt:             'black',
+    colorTextAlt:             'white',
     colorOutline:             'rgb(172, 172, 172)',
     colorOutlineFocus:        'rgb(61, 61, 61)',
-    colorButton:              'rgb(178, 87, 206)',
-    colorButtonSelected:      'rgb(193, 119, 216)',
-    colorButtonAlt:           'rgb(53, 158, 71)',
-    colorButtonAltSelected:   'rgb(121, 199, 132)',
-    colorLink:                'rgb(0, 162, 255)',
-    colorBackground:          'rgb(235, 235, 235)',
-    colorForm:                'white',
-    colorNavbar:              'white',
+    colorButton:              'rgb(53, 158, 71)',
+    colorButtonSelected:      'rgb(121, 199, 132)',
+    colorButtonAlt:           'rgb(178, 87, 206)',
+    colorButtonAltSelected:   'rgb(193, 119, 216)',
+    colorLink:                'rgb(0, 220, 255)',
+    colorBackground:          'rgb(70, 70, 70)',
+    colorForm:                'rgb(100, 100, 100)',
+    colorNavbar:              'rgb(100, 100, 100)',
     filterNavbar:             'drop-shadow(0 0 3px rgba(0, 0, 0, 0.2))',
     filterCard:               'drop-shadow(2px 2px 1px rgba(0, 0, 0, 0.2))',
+    filterButton:             'drop-shadow(2px 2px 1px rgba(0, 0, 0, 0.15))',
     transitionTime:           '0.15s',
 };
 
@@ -71,7 +74,6 @@ function ThemeProvider({ children }: PropsWithChildren<{}>): JSX.Element {
     for(const [propName, propValue] of Object.entries(theme)) {
         document.documentElement.style.setProperty(`--${propName}`, propValue);
     }
-
     return <ThemeNameContext.Provider value={[themeName, setThemeName]}>
         {children}
     </ThemeNameContext.Provider>;

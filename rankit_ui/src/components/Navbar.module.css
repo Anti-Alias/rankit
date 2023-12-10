@@ -78,6 +78,7 @@
     background-color: var(--colorNavbar);
     color: var(--colorTextAlt);
     background-color: var(--colorButtonAlt);
+    filter: var(--filterButton);
 }
 
 .signup {
@@ -94,4 +95,5 @@
 .signup:hover {
     color: var(--colorTextAlt);
     background-color: var(--colorButton);
+    filter: var(--filterButton);
 }
