@@ -17,6 +17,7 @@ type Theme = {
     colorButtonAlt:         string;
     colorButtonAltSelected: string;
     colorLink:              string;
+    colorError:             string;
     colorBackground:        string;
     colorForm:              string;
     colorNavbar:            string;
@@ -36,6 +37,7 @@ const LightTheme: Theme = {
     colorButtonAlt:           'rgb(53, 158, 71)',
     colorButtonAltSelected:   'rgb(121, 199, 132)',
     colorLink:                'rgb(0, 162, 255)',
+    colorError:               'rgb(255, 50, 50)',
     colorBackground:          'rgb(235, 235, 235)',
     colorForm:                'white',
     colorNavbar:              'white',
@@ -55,6 +57,7 @@ const DarkTheme: Theme = {
     colorButtonAlt:           'rgb(178, 87, 206)',
     colorButtonAltSelected:   'rgb(193, 119, 216)',
     colorLink:                'rgb(0, 220, 255)',
+    colorError:               'orange',
     colorBackground:          'rgb(70, 70, 70)',
     colorForm:                'rgb(100, 100, 100)',
     colorNavbar:              'rgb(100, 100, 100)',

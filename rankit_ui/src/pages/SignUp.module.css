@@ -8,12 +8,6 @@
     filter:             var(--filterCard);
 }
 
-/** Changes color of text within <Link> elements*/
-.SignUp a {
-    color: var(--colorLink);
-    font-weight: bold;
-}
-
 .SignUp input {
     margin: 4px 0 0 0;
     border-radius: 5px;
@@ -41,9 +35,29 @@
 .inputWrapper {
     display: flex;
     flex-direction: column;
-    margin-top: 15px;
+    margin-top: 10px;
 }
 
 .label {
     font-size: 18px;
+    margin: 0;
+}
+
+.memberText {
+    font-weight: bold;
+    margin: 20px 0 10px 0;
+    padding: 0;
+}
+
+.memberText a {
+    color: var(--colorLink) !important;
+}
+
+.error {
+    color: var(--colorError);
+    height: 15px;
+    margin: 0;
+    padding: 2px 0 0 0;
+    font-size: 13px;
+    font-weight: bold;
 }
