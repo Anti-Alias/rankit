@@ -1,30 +1,27 @@
 import styles         from './App.module.css';
-import ThemeProvider  from './components/ThemeProvider';
 import Navbar         from './components/Navbar';
 import About          from './pages/About';
 import SignUp         from './pages/SignUp';
 import LogIn          from './pages/LogIn';
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { Routes, Route, Outlet } from 'react-router-dom';
 
 /** Main application element */
 function App() {
-  return <div className={styles.App}>
-      <BrowserRouter>
-        <ThemeProvider>
-          <Navbar/>
-          <Routes>
-            <Route path="/" element={<Layout/>}>
-              <Route index              element={<About/>}/>
-              <Route path="login"       element={<LogIn/>}/>
-              <Route path="signup"      element={<SignUp/>}/>
-              <Route path="things"      element={<Things/>}/>
-              <Route path="categories"  element={<Categories/>}/>
-              <Route path="*"           element={<PageNotFound/>}/>
-            </Route>
-          </Routes>
-        </ThemeProvider>
-      </BrowserRouter>
-  </div>
+  return (
+    <div className={styles.App}>
+      <Navbar/>
+      <Routes>
+        <Route path="/" element={<Layout/>}>
+          <Route index              element={<About/>}/>
+          <Route path="login"       element={<LogIn/>}/>
+          <Route path="signup"      element={<SignUp/>}/>
+          <Route path="things"      element={<Things/>}/>
+          <Route path="categories"  element={<Categories/>}/>
+          <Route path="*"           element={<PageNotFound/>}/>
+        </Route>
+      </Routes>
+    </div>
+  )
 };
 
 const Things = () => (
