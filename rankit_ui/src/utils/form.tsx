@@ -16,7 +16,7 @@ class FormValidator {
     }
 
     /**
-     * Validates a form.
+     * Validates a navite form.
      * Returns true if all validators were successful.
      */
     validate(form: HTMLFormElement): boolean {
