@@ -1,9 +1,10 @@
 .Navbar {
     display: flex;
     position: sticky;
+    top: 0;
     justify-content: center;
     align-self: stretch;
-    top: 0;
+    padding: 0 10px 0 10px;
     margin: 0;
     background-color: var(--colorNavbar);
     filter: var(--filterNavbar);
@@ -44,7 +45,6 @@
     display: flex;
     align-items: center;
     height: 100%;
-    margin-right: 130px;
 }
 
 .option {
@@ -93,4 +93,20 @@
     color: var(--colorTextAlt);
     background-color: var(--colorButton);
     filter: var(--filterButton);
+}
+
+.logo {
+    margin-right: 130px;
+}
+
+.desktop {
+    width: 53%;
+}
+
+.tablet {
+    width: 80%;
+}
+
+.mobile {
+    width: 100%;
 }

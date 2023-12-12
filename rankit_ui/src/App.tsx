@@ -4,6 +4,8 @@ import About          from './pages/About';
 import SignUp         from './pages/SignUp';
 import LogIn          from './pages/LogIn';
 import { Routes, Route, Outlet } from 'react-router-dom';
+import { DisplayModeContext } from './components/DisplayModeProvider';
+import { useContext } from 'react';
 
 /** Main application element */
 function App() {
@@ -43,10 +45,14 @@ const PageNotFound = () => (
 );
 
 // Container for page content
-const Layout = () => (
-  <div className={styles.Layout}>
-    <Outlet/>
-  </div>
-);
+function Layout(): JSX.Element {
+  const displayMode = useContext(DisplayModeContext);
+  const className = `${styles.Layout} ${styles[displayMode]}`;
+  return (
+    <div className={className}>
+      <Outlet/>
+    </div>
+  );
+}
 
 export default App;

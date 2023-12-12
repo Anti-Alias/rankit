@@ -9,9 +9,20 @@
   display:        flex;
   flex-direction: column;
   align-items:    center;
-  width:          53%;
   height:         80%;
   margin:         10px;
   margin-top:     60px;
   padding:        0;
+}
+
+.desktop {
+  width: 53%;
+}
+
+.tablet {
+  width: 80%;
+}
+
+.mobile {
+  width: 100%;
 }
