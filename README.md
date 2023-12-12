@@ -1,4 +1,4 @@
-# Rankit
+# Thingelo
 
 An ELO rating site where users can rate **Things** under **Categories**.
 
