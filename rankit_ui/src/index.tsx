@@ -10,9 +10,9 @@ const root = ReactDOM.createRoot(htmlRoot);
 root.render(
   <React.StrictMode>
     <BrowserRouter>
-        <ThemeProvider>
-          <App/>
-        </ThemeProvider>
+      <ThemeProvider>
+        <App/>
+      </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>
 );
