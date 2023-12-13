@@ -13,16 +13,19 @@
   margin:         10px;
   margin-top:     60px;
   padding:        0;
+  width: 50%;
 }
 
-.desktop {
-  width: 53%;
+/** Tablet */
+@media(max-aspect-ratio: 14/9) {
+  .Layout {
+      width: 80%;
+  }
 }
 
-.tablet {
-  width: 80%;
-}
-
-.mobile {
-  width: 100%;
+/** Mobile */
+@media(max-aspect-ratio: 1/1) {
+  .Layout {
+      width: 100%;
+  }
 }

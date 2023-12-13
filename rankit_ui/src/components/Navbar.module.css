@@ -20,7 +20,21 @@
     flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
-    width: 53%;
+    width: 50%;
+}
+
+/** Tablet */
+@media(max-aspect-ratio: 14/9) {
+    .inner {
+        width: 80%;
+    }
+}
+
+/** Mobile */
+@media(max-aspect-ratio: 1/1) {
+    .inner {
+        width: 100%;
+    }
 }
 
 .left {
@@ -33,6 +47,13 @@
     display: flex;
     align-items: center;
     height: 38px;
+}
+
+/** Mobile */
+@media(max-aspect-ratio: 1/1) {
+    .center {
+        display: none;
+    }
 }
 
 .right {
@@ -97,16 +118,4 @@
 
 .logo {
     margin-right: 130px;
-}
-
-.desktop {
-    width: 53%;
-}
-
-.tablet {
-    width: 80%;
-}
-
-.mobile {
-    width: 100%;
 }
