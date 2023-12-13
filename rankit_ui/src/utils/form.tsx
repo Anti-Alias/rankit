@@ -25,7 +25,7 @@ class FormValidator {
      * Validates a native form.
      * @returns true if all validators were successful.
      */
-    validate(form: HTMLFormElement): boolean {
+    validateForm(form: HTMLFormElement): boolean {
         let success = true;
         for(const [inputName, validatorData] of this.validators.entries()) {
 
@@ -53,6 +53,40 @@ class FormValidator {
             }
         }
         return success;
+    }
+
+    /**
+     * Validates a specific form input. Call when the input changes and the user has clicked off of it.
+     * @returns true if validator was successful.
+     */
+    validateInput(inputName: string, inputValue: string): boolean {
+
+        // Fetches validator data / 
+        const validatorData = this.validators.get(inputName);
+        if(!validatorData) {
+            throw new Error(`Validator with name ${inputName} not found`);
+        }
+
+        // Fetches input / error container DOM elements using ids.
+        const messageElem = document.getElementById(validatorData.id);
+        if(!messageElem) {
+            throw new Error(`Element with id ${validatorData.id} not found`);
+        }
+
+        // Validates input and sets error message if emitted by validator.
+        const errorMessage = validatorData.validator(inputValue);
+        if(errorMessage) {
+            if(!messageElem) {
+                throw new Error(`Element with id ${validatorData.id} not found`);
+            }
+            messageElem.innerHTML = errorMessage;
+            return false;
+        }
+        else {
+            messageElem.innerHTML = "";
+        }
+
+        return true;
     }
 }
 
