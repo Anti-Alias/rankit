@@ -1,4 +1,4 @@
-import { ChangeEvent, ChangeEventHandler, FormEvent, useState } from 'react';
+import { ChangeEvent, FormEvent } from 'react';
 import Button from '../components/Button';
 import styles from './SignUp.module.css';
 import { Link } from 'react-router-dom';
