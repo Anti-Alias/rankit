@@ -40,29 +40,29 @@ pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error>
 
     // App
     let mut app = Router::new()
-        .route("/account/role",             put(account::update_role))  // Updates an account's role.
+        .route("/api/account/role",             put(account::update_role))  // Updates an account's role.
         // Above routes require root authorization.
         .route_layer(authorize_root)
-        .route("/thing",                    post(thing::create))        // Creates a new Thing.
-        .route("/thing/:id",                delete(thing::delete))      // Deletes a Thing.
-        .route("/category",                 post(category::create))     // Creates a new Category.
-        .route("/category/:id",             delete(category::delete))   // Deletes a Category.
-        .route("/rank",                     post(rank::create))         // Creates a new Rank for a Thing in a Category.
-        .route("/rank/:id",                 delete(rank::delete))       // Deletes a Rank.
+        .route("/api/thing",                    post(thing::create))        // Creates a new Thing.
+        .route("/api/thing/:id",                delete(thing::delete))      // Deletes a Thing.
+        .route("/api/category",                 post(category::create))     // Creates a new Category.
+        .route("/api/category/:id",             delete(category::delete))   // Deletes a Category.
+        .route("/api/rank",                     post(rank::create))         // Creates a new Rank for a Thing in a Category.
+        .route("/api/rank/:id",                 delete(rank::delete))       // Deletes a Rank.
         // Above routes require admin or root authorization.
         .route_layer(authorize_admin)
-        .route("/account/start_poll",       put(account::start_poll))   // Puts current account into a "polling state" for a particular category.
-        .route("/account/end_poll",         put(account::end_poll))     // Takes current account out of "polling state" by having them submit an answer.
+        .route("/api/account/start_poll",       put(account::start_poll))   // Puts current account into a "polling state" for a particular category.
+        .route("/api/account/end_poll",         put(account::end_poll))     // Takes current account out of "polling state" by having them submit an answer.
         // Above routes require authentication.
         .route_layer(authenticate)
-        .route("/account",                  post(account::create))      // Creates a new account.
-        .route("/account/verify/:token",    post(account::verify))      // Verifies an account.
-        .route("/account/login",            post(account::login))       // Logs in an account and return a Claims JWT.
-        .route("/things",                   get(thing::list))           // Gets all Things.
-        .route("/thing/:id",                get(thing::single))         // Gets a single Thing.
-        .route("/categories",               get(category::list))        // Gets all Categories.
-        .route("/category/:id",             get(category::single))      // Gets a single Category.
-        .route("/category/:id/statistics",  get(category::statistics))  // Gets statistics for a Category.
+        .route("/api/account",                  post(account::create))      // Creates a new account.
+        .route("/api/account/verify/:token",    post(account::verify))      // Verifies an account.
+        .route("/api/account/login",            post(account::login))       // Logs in an account and return a Claims JWT.
+        .route("/api/things",                   get(thing::list))           // Gets all Things.
+        .route("/api/thing/:id",                get(thing::single))         // Gets a single Thing.
+        .route("/api/categories",               get(category::list))        // Gets all Categories.
+        .route("/api/category/:id",             get(category::single))      // Gets a single Category.
+        .route("/api/category/:id/statistics",  get(category::statistics))  // Gets statistics for a Category.
         .with_state(state.clone()); 
 
     // Configures app based on environment

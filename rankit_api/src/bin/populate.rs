@@ -78,7 +78,7 @@ async fn main() {
 async fn login(root_name: &str, root_pass: &str, client: &TestClient) -> String {
     let credentials = format!("{}:{}", root_name, root_pass);
     let credentials = general_purpose::STANDARD_NO_PAD.encode(credentials);
-    let response = client.post("/account/login")
+    let response = client.post("/api/account/login")
         .header("Authorization", format!("Basic {}", credentials))
         .send()
         .await;
@@ -91,7 +91,7 @@ async fn login(root_name: &str, root_pass: &str, client: &TestClient) -> String 
 
 async fn create_account(name: &str, email: &str, password: &str, client: &TestClient) -> i32 {
     let body = to_string(&account::CreateRequest { name: name.into(), email: email.into(), password: password.into() }).unwrap();
-    let response = client.post("/account")
+    let response = client.post("/api/account")
         .header("Content-Type", "application/json")
         .body(body)
         .send()
@@ -103,7 +103,7 @@ async fn create_account(name: &str, email: &str, password: &str, client: &TestCl
 
 async fn set_role(account_id: i32, role: RoleLesser, bearer: &str, client: &TestClient) {
     let body = to_string(&account::UpdateRoleRequest { account_id, role }).unwrap();
-    let response = client.put("/account/role")
+    let response = client.put("/api/account/role")
         .header("Authorization", bearer)
         .header("Content-Type", "application/json")
         .body(body)
@@ -117,7 +117,7 @@ async fn create_thing(name: &str, bytes: &'static [u8], bearer: &str, client: &T
     let form = Form::new()
         .text("request", thing_json)
         .part("image", Part::bytes(bytes));
-    let response = client.post("/thing")
+    let response = client.post("/api/thing")
         .header("Authorization", bearer)
         .multipart(form)
         .send()
@@ -129,7 +129,7 @@ async fn create_thing(name: &str, bytes: &'static [u8], bearer: &str, client: &T
 
 async fn create_category(name: &str, bearer: &str, client: &TestClient) -> i32 {
     let body = to_vec(&category::CreateRequest { name: name.into() }).unwrap();
-    let response = client.post("/category")
+    let response = client.post("/api/category")
         .header("Authorization", bearer)
         .header("Content-Type", "application/json")
         .body(body)
@@ -142,7 +142,7 @@ async fn create_category(name: &str, bearer: &str, client: &TestClient) -> i32 {
 
 async fn create_rank(thing_id: i32, category_id: i32, bearer: &str, client: &TestClient) {
     let body = to_vec(&rank::CreateRequest { thing_id, category_id }).unwrap();
-    let response = client.post("/rank")
+    let response = client.post("/api/rank")
         .header("Authorization", bearer)
         .header("Content-Type", "application/json")
         .body(body)
