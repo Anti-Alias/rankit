@@ -8,28 +8,28 @@ const AppDataContext: Context<AppData> = createContext<AppData>({ client: new Ap
  * Great for services and app-wide parameters.
  */
 interface AppData {
-  client: ApiClient
+    client: ApiClient
 }
 
 /**
  * @returns {@link AppData} provided by a {@link AppDataProvider}.
  */
 function useApiClient(): ApiClient {
-  return useContext(AppDataContext).client;
+    return useContext(AppDataContext).client;
 }
 
 /**
  * Provides a {@link AppData} based on parameters stored in a .env file.
  */
 function AppDataProvider({children}: PropsWithChildren<{}>) {
-  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
-  if(!apiBaseUrl) {
-    throw new Error("Env varr REACT_APP_API_BASE_URL not set");
-  }
-  const appData = {
-    client: new ApiClient(apiBaseUrl)
-  }
-  return <AppDataContext.Provider value={appData}>{children}</AppDataContext.Provider>;
+    const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
+    if(!apiBaseUrl) {
+        throw new Error("Env var REACT_APP_API_BASE_URL not set");
+    }
+    const appData = {
+        client: new ApiClient(apiBaseUrl)
+    }
+    return <AppDataContext.Provider value={appData}>{children}</AppDataContext.Provider>;
 }
 
 export { useApiClient };
