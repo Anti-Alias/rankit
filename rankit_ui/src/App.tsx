@@ -3,6 +3,7 @@ import Navbar         from './components/Navbar';
 import About          from './pages/About';
 import SignUp         from './pages/SignUp';
 import LogIn          from './pages/LogIn';
+import Verification   from './pages/Verification';
 import { Routes, Route, Outlet } from 'react-router-dom';
 
 /** Main application element */
@@ -12,35 +13,36 @@ function App() {
       <Navbar/>
       <Routes>
         <Route path="/" element={<Layout/>}>
-          <Route index              element={<About/>}/>
-          <Route path="login"       element={<LogIn/>}/>
-          <Route path="signup"      element={<SignUp/>}/>
-          <Route path="things"      element={<Things/>}/>
-          <Route path="categories"  element={<Categories/>}/>
-          <Route path="*"           element={<PageNotFound/>}/>
+          <Route index                element={<About/>}/>
+          <Route path="login"         element={<LogIn/>}/>
+          <Route path="signup"        element={<SignUp/>}/>
+          <Route path="things"        element={<Things/>}/>
+          <Route path="categories"    element={<Categories/>}/>
+          <Route path="verification"  element={<Verification/>}/>
+          <Route path="*"             element={<PageNotFound/>}/>
         </Route>
       </Routes>
     </div>
   )
 };
 
-const Things = () => (
-  <>
+function Things() {
+  return <>
     <h1>Things</h1>
     <p>Under construction</p>
   </>
-);
+}
 
-const Categories = () => (
-  <>
+function Categories() {
+  return <>
     <h1>Categories</h1>
     <p>Under construction</p>
   </>
-);
+}
 
-const PageNotFound = () => (
-  <h1>Page Not Found</h1>
-);
+function PageNotFound() {
+  return <h1>Page Not Found</h1>;
+}
 
 // Container for page content
 function Layout(): JSX.Element {

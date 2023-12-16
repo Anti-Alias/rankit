@@ -1,14 +1,32 @@
-import { ChangeEvent, FormEvent } from 'react';
-import Button from '../components/Button';
-import styles from './SignUp.module.css';
-import { Link } from 'react-router-dom';
+import { ChangeEvent, FormEvent, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { FormValidator } from '../utils/form';
+import { useApiClient } from '../components/AppDataProvider';
+import styles from './SignUp.module.css';
+import Button from '../components/Button';
 import validator from 'validator';
+import * as account from '../model/account';
 
 const MinPasswordLength: number = 8;
 const UsernameRegex: RegExp = /^[a-zA-Z0-9_-]{4,32}$/;
-const AlphaNumericRegex: RegExp = /[a-zA-Z0-9]{8,32}/;
+const AlphaNumericRegex: RegExp = /[a-zA-Z0-9]{1,32}/;
 const SpecialCharacterRegex: RegExp = /[~!@#$%^&*]/;
+
+const Validator = new FormValidator()
+  .addValidator("email", "emailError", validateEmail)
+  .addValidator("username", "usernameError", validateUsername)
+  .addValidator("password", "passwordError", validatePassword);
+
+function parseForm(form: HTMLFormElement): account.CreateRequest {
+  const emailInput = form.elements.namedItem("email") as HTMLInputElement;
+  const usernameInput = form.elements.namedItem("username") as HTMLInputElement;
+  const passwordInput = form.elements.namedItem("password") as HTMLInputElement;
+  return {
+    "email": emailInput.value,
+    "name": usernameInput.value,
+    "password": passwordInput.value,
+  }
+}
 
 function validateEmail(email: string): string | void {
   if(!email) {
@@ -44,19 +62,23 @@ function validatePassword(password: string): string | void {
 }
 
 
-const Validator = new FormValidator()
-  .addValidator("email", "emailError", validateEmail)
-  .addValidator("username", "usernameError", validateUsername)
-  .addValidator("password", "passwordError", validatePassword);
-
-
 function SignUp() {
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const [isError, setIsError] = useState<boolean>(false);
+  const navigate = useNavigate();
+  const client = useApiClient();
+
+  const onFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const success = Validator.validateForm(event.currentTarget);
-    if(success) {
-      alert("Valid form!");
+    const form = event.currentTarget;
+    if(!Validator.validateForm(form)) { return }
+    try {
+      const createAccountRequest = parseForm(form);
+      await client.createAccount(createAccountRequest);
+      navigate("/verification", { state: { "email": createAccountRequest.email }});
+    }
+    catch {
+      setIsError(true);
     }
   }
 
@@ -73,7 +95,7 @@ function SignUp() {
   } 
 
   return (
-    <form className={styles.SignUp} onSubmit={onSubmit} noValidate>
+    <form className={styles.SignUp} onSubmit={onFormSubmit} noValidate>
       <h1>Sign Up</h1>
       <label className={styles.inputWrapper}>
         <span className={styles.label}>Email</span>
@@ -92,8 +114,10 @@ function SignUp() {
       </label>
       <p className={styles.memberText}>Already a member? <Link to="/login">Log In</Link></p>
       <Button type="submit">Submit</Button>
+      {isError && <p className={styles.unexpectedError}>Something went wrong on our end. Please try again.</p>}
     </form>
   );
 };
+
 
 export default SignUp;

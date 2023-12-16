@@ -61,3 +61,13 @@
     font-size: 13px;
     font-weight: bold;
 }
+
+.unexpectedError {
+    color: var(--colorError);
+    height: 15px;
+    margin: 0;
+    padding: 8px 0 0 0;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+}
