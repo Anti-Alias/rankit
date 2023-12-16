@@ -5,7 +5,7 @@ use reqwest::StatusCode;
 use reqwest::multipart::{Form, Part};
 use axum_test_helper::*;
 use rankit::app::read_var;
-use rankit::{env, rank};
+use rankit::{env_names, rank};
 use rankit::{app, category, thing, account};
 use serde_json::{to_vec, to_string};
 use tokio::join;
@@ -22,8 +22,8 @@ async fn main() {
     println!("___Starting APP___");
     let app = app::create_app_from_env(true).await.unwrap();
     let client = TestClient::new(app);
-    let root_name: String = read_var(env::APP_ROOT_ACCOUNT_NAME).unwrap();
-    let root_pass: String = read_var(env::APP_ROOT_ACCOUNT_PASSWORD).unwrap();
+    let root_name: String = read_var(env_names::APP_ROOT_ACCOUNT_NAME).unwrap();
+    let root_pass: String = read_var(env_names::APP_ROOT_ACCOUNT_PASSWORD).unwrap();
 
     println!("___Logging in as root___");
     let root_bearer = login(&root_name, &root_pass, &client).await;

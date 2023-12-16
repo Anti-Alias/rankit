@@ -15,13 +15,13 @@ const THING_AND_CATEGORY_EXIST: &str = "\
         SELECT COUNT(*) FROM thing WHERE id=$1 AND deleted IS NULL \
         UNION \
         SELECT COUNT(*) FROM category WHERE id=$2 AND deleted is null \
-    )\
+    ) as sub\
 ";
 
 /// Associates a [`Thing`](crate::thing::Thing), within a [`Category`](crate::category::Category),
 /// and gives it a [`Rank`] within that [`Category`](crate::category::Category).
 /// Uses ELO rating system: https://en.wikipedia.org/wiki/Elo_rating_system
-#[derive(FromRow, Serialize, Deserialize, Clone,  PartialEq, Debug)]
+#[derive(FromRow, Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Rank {
     pub id: i32,
     pub thing_id: i32,

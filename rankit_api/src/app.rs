@@ -14,7 +14,7 @@ use regex::Regex;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use crate::account::create_root_account;
 use crate::email::{DynEmailService, EmailServiceError};
-use crate::{account, thing, env, category, rank, migrate};
+use crate::{account, thing, env_names, category, rank, migrate};
 use crate::file::{DynFileService, FileServiceError};
 
 
@@ -26,9 +26,9 @@ pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error>
     if migrate {
         migrate::migrate().await?;
         create_root_account(
-            read_var(env::APP_ROOT_ACCOUNT_NAME)?,
-            read_var(env::APP_ROOT_ACCOUNT_EMAIL)?,
-            read_var(env::APP_ROOT_ACCOUNT_PASSWORD)?,
+            read_var(env_names::APP_ROOT_ACCOUNT_NAME)?,
+            read_var(env_names::APP_ROOT_ACCOUNT_EMAIL)?,
+            read_var(env_names::APP_ROOT_ACCOUNT_PASSWORD)?,
             &state.pool
         ).await?;
     }
@@ -81,16 +81,16 @@ pub struct AppState(Arc<AppStateInner>);
 
 impl AppState {
     pub async fn from_env() -> Result<Self, StartupError> {
-        let app_type: AppType = read_var(env::APP_TYPE)?;
+        let app_type: AppType = read_var(env_names::APP_TYPE)?;
         let (file_store, email_service) = match app_type {
             AppType::Local => (DynFileService::filesystem("assets"), DynEmailService::filesystem("emails")),
             AppType::Aws => return Err(StartupError::AppTypeNotYetSupported(app_type)),
         };
-        let pg_str: String                  = read_var(env::APP_DB)?;
-        let claims_duration: u64            = read_var(env::APP_CLAIMS_DURATION)?;
+        let pg_str: String                  = read_var(env_names::APP_DB)?;
+        let claims_duration: u64            = read_var(env_names::APP_CLAIMS_DURATION)?;
         let claims_duration                 = Duration::from_secs(claims_duration);
-        let claims_secret: String           = read_var(env::APP_CLAIMS_DURATION)?;
-        let email_verification_url: String  = read_var(env::APP_EMAIL_VERIFICATION_URL)?;
+        let claims_secret: String           = read_var(env_names::APP_CLAIMS_DURATION)?;
+        let email_verification_url: String  = read_var(env_names::APP_EMAIL_VERIFICATION_URL)?;
         let claims_secret                   = claims_secret.as_bytes();
         let pool                            = PgPoolOptions::new().max_connections(32).connect(&pg_str).await?;
         let state = AppStateInner {
