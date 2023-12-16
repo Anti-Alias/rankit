@@ -9,7 +9,7 @@ mod embedded {
 
 pub async fn migrate() -> Result<(), anyhow::Error> {
     dotenvy::dotenv()?;
-    let mut config = Config::from_env_var(env_names::APP_DB)?;
+    let mut config = Config::from_env_var(env_names::API_DB)?;
     embedded::migrations::runner()
         .run_async(&mut config)
         .await?;

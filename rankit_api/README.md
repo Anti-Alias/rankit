@@ -9,13 +9,13 @@ Rust + Axum REST API for the **Thingelo** site.
 ## How to Run Locally
 * Install Postgres for your system if not already installed.
 * Create a database called **thingelo**.
-* Export the environment variable **APP_DB** that connects to **thingelo**.
+* Export the environment variable **API_DB** that connects to **thingelo**.
   See **.env** for the default connection string.
 * Run the application in dev mode:
 ```bash
 cargo run
 ```
-The REST API will be hosted on port 8080.
+The REST API will be hosted using the environment variable **SERVER_ADDRESS**.
 
 ## How to Populate Sample Data
 To make the app easier to test manually, you can run a the **populate** bin crate via:

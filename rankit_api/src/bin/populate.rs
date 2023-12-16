@@ -19,11 +19,11 @@ async fn main() {
     env_logger::init();
     let start_time = SystemTime::now();
 
-    println!("___Starting APP___");
+    println!("___Starting API___");
     let app = app::create_app_from_env(true).await.unwrap();
     let client = TestClient::new(app);
-    let root_name: String = read_var(env_names::APP_ROOT_ACCOUNT_NAME).unwrap();
-    let root_pass: String = read_var(env_names::APP_ROOT_ACCOUNT_PASSWORD).unwrap();
+    let root_name: String = read_var(env_names::API_ROOT_ACCOUNT_NAME).unwrap();
+    let root_pass: String = read_var(env_names::API_ROOT_ACCOUNT_PASSWORD).unwrap();
 
     println!("___Logging in as root___");
     let root_bearer = login(&root_name, &root_pass, &client).await;
