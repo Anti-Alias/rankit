@@ -1,5 +1,8 @@
-type Validator      = (input: string) => string | void | null;
-type ValidatorData  = { id: string, validator: Validator };
+type Validator = (input: string) => string | void | null;
+interface ValidatorData {
+    id: string,
+    validator: Validator
+};
 
 /**
  * Simplifies the process of validating forms and 
