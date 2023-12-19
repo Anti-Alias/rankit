@@ -8,22 +8,6 @@
     filter:             var(--filterCard);
 }
 
-.SignUp input {
-    margin: 4px 0 0 0;
-    border-radius: 5px;
-    border: solid var(--color-border);
-    border-width: 2px;
-    font-size: 18px;
-    width: 100%;
-    height: 30px;
-    outline: 1px solid var(--colorOutline);
-    transition: outline-color var(--transitionTime);
-}
-
-.SignUp input:focus {
-    outline: 2px solid var(--colorOutlineFocus);
-}
-
 .inputs {
     display: flex;
     flex-direction: column;

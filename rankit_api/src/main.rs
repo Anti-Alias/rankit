@@ -11,7 +11,7 @@ async fn main() -> Result<(), anyhow::Error> {
     env_logger::init();
 
     // Starts app.
-    let address: SocketAddr = read_var(env_names::API_SERVER_ADDRESS)?;
+    let address: SocketAddr = read_var(env_names::API_BIND_ADDRESS)?;
     let app = create_app_from_env(true).await?;
     axum::Server::bind(&address)
         .serve(app.into_make_service())

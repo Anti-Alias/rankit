@@ -1,4 +1,4 @@
-pub const API_SERVER_ADDRESS: &str          = "API_SERVER_ADDRESS";
+pub const API_BIND_ADDRESS: &str            = "API_BIND_ADDRESS";
 pub const API_DB: &str                      = "API_DB";
 pub const API_ROOT_ACCOUNT_NAME: &str       = "API_ROOT_ACCOUNT_NAME";
 pub const API_ROOT_ACCOUNT_EMAIL: &str      = "API_ROOT_ACCOUNT_EMAIL";

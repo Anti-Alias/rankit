@@ -12,6 +12,8 @@
     "@types/react-dom": "^18.2.15",
     "@types/validator": "^13.11.7",
     "react": "^18.2.0",
+    "react-coundown": "^1.0.2",
+    "react-countdown": "^2.3.5",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0",
     "react-scripts": "5.0.1",

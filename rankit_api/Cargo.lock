@@ -1841,6 +1841,7 @@ dependencies = [
  "dotenvy",
  "env_logger",
  "hmac",
+ "http",
  "image",
  "jsonwebtoken",
  "log",

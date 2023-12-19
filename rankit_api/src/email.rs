@@ -76,6 +76,6 @@ fn send_sim_email(directory: PathBuf, recipient: String, subject: String, body: 
         .open(file_path)?;
 
     // Writes contents
-    write!(file, "Subject: {subject}\nBody: {body}")?;
+    write!(file, "Subject: {subject}\nBody:\n{body}")?;
     Ok(())
 }

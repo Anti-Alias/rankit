@@ -1,6 +1,5 @@
 use axum::extract::Path;
 use axum_auth::AuthBasic;
-use base64::{Engine as _, engine::general_purpose};
 use jsonwebtoken::{encode, decode, Header, Validation, DecodingKey};
 use axum::{Json, extract::State, middleware::Next};
 use axum::response::{Response, IntoResponse};
@@ -120,7 +119,7 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
         .fetch_one(&state.pool)
         .await?;
     if count.0 != 0 {
-        return Err(AppError::DuplicateRecord);
+        return Err(AppError::DuplicateAccount);
     }
 
     let mut transaction = state.pool.begin().await?;
@@ -145,36 +144,43 @@ pub async fn create(state: State<AppState>, request: Json<CreateRequest>) -> Jso
 
     // Sends verification email.
     let email_subject = String::from("Email Verification");
-    let verification_url = state.email_verification_url.replace("{verification_token}", &verification_token);
-    let email_body = format!("Verify your account by visiting {}", verification_url);
+    let email_body = format!("Your verification code:\n{}\nThis code expires in 15 minutes.", verification_token);
     state.email_service.send(request.email, email_subject, email_body).await?;
     transaction.commit().await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 /// Verifies an account.
-pub async fn verify(state: State<AppState>, path: Path<String>) -> Result<StatusCode, AppError> {
+pub async fn verify(state: State<AppState>, path: Path<(i32, String)>) -> Result<StatusCode, AppError> {
     
     let state = state.0;
-    let request_token = path.0;
+    let (account_id, request_token) = path.0;
 
     // Gets matching token
-    let account_id: Option<(i32,)> = sqlx::query_as("SELECT account_id FROM verification_token WHERE token = $1")
-        .bind(request_token)
+    log::trace!("Fetching verification token for account {}", account_id);
+    let token: Option<(String,)> = sqlx::query_as("SELECT token FROM verification_token WHERE account_id = $1")
+        .bind(account_id)
         .fetch_optional(&state.pool)
         .await?;
-    let Some(account_id) = account_id else {
-        return Err(AppError::InvalidVerificationToken);
+    let Some(token) = token else {
+        return Err(AppError::VerificationTokenNotFound);
     };
-    let account_id = account_id.0;
+    let token = token.0;
+
+    // Checks that tokens match
+    if request_token != token {
+        return Err(AppError::VerificationTokenNotFound);
+    }
 
     // Verifies account
+    log::trace!("Verifying account {account_id}");
     sqlx::query("UPDATE account SET verified = true WHERE id = $1")
         .bind(account_id)
         .execute(&state.pool)
         .await?;
 
     // Deletes token
+    log::trace!("Deleting verification token {token}");
     sqlx::query("DELETE FROM verification_token WHERE account_id = $1")
         .bind(account_id)
         .execute(&state.pool)
@@ -323,6 +329,13 @@ fn skip_bearer(auth_token: &str) -> Result<&str, AppError> {
 }
 
 fn generate_verification_token() -> String {
-    let bytes = rand::thread_rng().gen::<[u8; 32]>();
-    general_purpose::URL_SAFE.encode(bytes)
+    let mut rng = rand::thread_rng();
+    let mut digits = [0; 6];
+    rng.fill(&mut digits);
+    for d in &mut digits {
+        *d = *d % 10;
+    }
+    digits.iter()
+        .map(|digit| char::from_digit(*digit, 10).unwrap())
+        .collect()
 }

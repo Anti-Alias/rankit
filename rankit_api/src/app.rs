@@ -7,6 +7,8 @@ use axum::http::StatusCode;
 use axum::routing::{Router, post, get, put, delete};
 use axum::response::{Response, IntoResponse};
 use axum::middleware;
+use http::Method;
+use tower_http::cors::{CorsLayer, AllowOrigin, AllowHeaders};
 use tower_http::services::ServeDir;
 use derive_more::{Error, Display, From};
 use jsonwebtoken::{EncodingKey, DecodingKey};
@@ -37,32 +39,40 @@ pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error>
     let authenticate    = middleware::from_fn_with_state(state.clone(), account::authenticate);
     let authorize_root  = middleware::from_fn(account::authorize_root);
     let authorize_admin = middleware::from_fn(account::authorize_admin);
+    let cors = CorsLayer::new()
+        .allow_methods([Method::GET, Method::HEAD, Method::POST, Method::PUT, Method::DELETE, Method::PATCH])
+        .allow_headers(AllowHeaders::any())
+        .allow_origin(AllowOrigin::predicate(|header_value, _request_parts| {
+            println!("{}", header_value.to_str().unwrap());
+            true
+        }));
 
     // App
     let mut app = Router::new()
         .route("/api/account/role",             put(account::update_role))  // Updates an account's role.
         // Above routes require root authorization.
         .route_layer(authorize_root)
-        .route("/api/thing",                    post(thing::create))        // Creates a new Thing.
-        .route("/api/thing/:id",                delete(thing::delete))      // Deletes a Thing.
-        .route("/api/category",                 post(category::create))     // Creates a new Category.
-        .route("/api/category/:id",             delete(category::delete))   // Deletes a Category.
-        .route("/api/rank",                     post(rank::create))         // Creates a new Rank for a Thing in a Category.
-        .route("/api/rank/:id",                 delete(rank::delete))       // Deletes a Rank.
+        .route("/api/thing",                                post(thing::create))        // Creates a new Thing.
+        .route("/api/thing/:id",                            delete(thing::delete))      // Deletes a Thing.
+        .route("/api/category",                             post(category::create))     // Creates a new Category.
+        .route("/api/category/:id",                         delete(category::delete))   // Deletes a Category.
+        .route("/api/rank",                                 post(rank::create))         // Creates a new Rank for a Thing in a Category.
+        .route("/api/rank/:id",                             delete(rank::delete))       // Deletes a Rank.
         // Above routes require admin or root authorization.
-        .route_layer(authorize_admin)
-        .route("/api/account/start_poll",       put(account::start_poll))   // Puts current account into a "polling state" for a particular category.
-        .route("/api/account/end_poll",         put(account::end_poll))     // Takes current account out of "polling state" by having them submit an answer.
-        // Above routes require authentication.
-        .route_layer(authenticate)
-        .route("/api/account",                  post(account::create))      // Creates a new account.
-        .route("/api/account/verify/:token",    post(account::verify))      // Verifies an account.
-        .route("/api/account/login",            post(account::login))       // Logs in an account and return a Claims JWT.
-        .route("/api/things",                   get(thing::list))           // Gets all Things.
-        .route("/api/thing/:id",                get(thing::single))         // Gets a single Thing.
-        .route("/api/categories",               get(category::list))        // Gets all Categories.
-        .route("/api/category/:id",             get(category::single))      // Gets a single Category.
-        .route("/api/category/:id/statistics",  get(category::statistics))  // Gets statistics for a Category.
+        .route_layer(authorize_admin)           
+        .route("/api/account/start_poll",                   put(account::start_poll))   // Puts current account into a "polling state" for a particular category.
+        .route("/api/account/end_poll",                     put(account::end_poll))     // Takes current account out of "polling state" by having them submit an answer.
+        // Above routes require authentication.         
+        .route_layer(authenticate)          
+        .route("/api/account",                              post(account::create))      // Creates a new account.
+        .route("/api/login",                                post(account::login))       // Logs in an account and return a Claims JWT.
+        .route("/api/account/:account_id/verify/:token",    post(account::verify))      // Verifies an account.
+        .route("/api/things",                               get(thing::list))           // Gets all Things.
+        .route("/api/thing/:id",                            get(thing::single))         // Gets a single Thing.
+        .route("/api/categories",                           get(category::list))        // Gets all Categories.
+        .route("/api/category/:id",                         get(category::single))      // Gets a single Category.
+        .route("/api/category/:id/statistics",              get(category::statistics))  // Gets statistics for a Category.
+        .route_layer(cors)
         .with_state(state.clone()); 
 
     // Configures app based on environment
@@ -90,7 +100,6 @@ impl AppState {
         let claims_duration: u64            = read_var(env_names::API_CLAIMS_DURATION)?;
         let claims_duration                 = Duration::from_secs(claims_duration);
         let claims_secret: String           = read_var(env_names::API_CLAIMS_DURATION)?;
-        let email_verification_url: String  = read_var(env_names::API_EMAIL_VERIFICATION_URL)?;
         let claims_secret                   = claims_secret.as_bytes();
         let pool                            = PgPoolOptions::new().max_connections(32).connect(&pg_str).await?;
         let state = AppStateInner {
@@ -102,7 +111,6 @@ impl AppState {
             max_image_width: 512,
             max_image_height: 512,
             thing_name_pattern: Regex::new(r"^[a-zA-Z0-9_]+$").unwrap(),
-            email_verification_url,
             pool,
             typ: app_type
         };
@@ -134,7 +142,6 @@ pub struct AppStateInner {
     pub max_image_width: u32,
     pub max_image_height: u32,
     pub thing_name_pattern: Regex,
-    pub email_verification_url: String,
     pub pool: PgPool,
     pub typ: AppType
 }
@@ -166,6 +173,7 @@ pub enum AppError {
     CannotModifyRootAccountRole,
     MissingPassword,
     InvalidVerificationToken,
+    VerificationTokenNotFound,
     BadRequest,
     MissingEmailOrUsername,
     MissingAuthHeader,
@@ -179,6 +187,7 @@ pub enum AppError {
     RankNotFound,
     AccountNotFound,
     AccountNotVerified,
+    DuplicateAccount,
     ThingOrCategoryNotFound,
     DuplicateRecord,
     NotEnoughThings,
@@ -214,7 +223,9 @@ impl IntoResponse for AppError {
             AppError::RankNotFound                  => (StatusCode::NOT_FOUND,      "Rank not found").into_response(),
             AppError::ThingOrCategoryNotFound       => (StatusCode::NOT_FOUND,      "Thing or category not found").into_response(),
             AppError::AccountNotFound               => (StatusCode::NOT_FOUND,      "Account not found").into_response(),
+            AppError::VerificationTokenNotFound     => (StatusCode::NOT_FOUND,      "Verification token not found").into_response(),
             AppError::AccountNotVerified            => (StatusCode::CONFLICT,       "Account not verified").into_response(),
+            AppError::DuplicateAccount              => (StatusCode::CONFLICT,       "Duplicate account").into_response(),
             AppError::DuplicateRecord               => (StatusCode::CONFLICT,       "Duplicate record").into_response(),
             AppError::NotEnoughThings               => (StatusCode::CONFLICT,       "Not enough things in category to compare").into_response(),
             AppError::NotInPollingState             => (StatusCode::CONFLICT,       "Account not in a polling state").into_response(),

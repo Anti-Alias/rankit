@@ -1,17 +1,38 @@
 import * as account from "../model/account";
 
-class ApiError extends Error {}
+/**
+ * Error that occurred
+ */
+class ApiError extends Error {
+    constructor(public message: string, public responseCode: number) {
+        super(message);
+    }
+}
 
 class ApiClient {
 
     constructor(private baseUrl: string) {}
 
+    /** 
+     * @param request Creates a new, unverified account, sending an email with a unique code.
+     * @returns User created with a unique id.
+     */
     async createAccount(request: account.CreateRequest): Promise<account.CreateResponse> {
         const response = await this.post("account", request);
         if(!response.ok) {
-            throw new ApiError("Failed to create an account");
+            throw new ApiError(await response.text(), response.status);
         }
         return response.json();
+    }
+
+    /**
+     * Verifies an unverified account using an account id and a code.
+     */
+    async verifyAccount(id: number, code: string): Promise<void> {
+        const response = await this.post(`account/${id}/verify/${code}`);
+        if(!response.ok) {
+            throw new ApiError(await response.text(), response.status);
+        }
     }
 
     private async get(url: string): Promise<Response> {
@@ -23,13 +44,15 @@ class ApiClient {
         return await fetch(fullUrl, init);
     }
 
-    private async post<B>(url: string, body: B): Promise<Response> {
+    private async post<B>(url: string, body?: B): Promise<Response> {
         const fullUrl = `${this.baseUrl}/${url}`;
-        const init = {
+        const init: RequestInit = {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
         };
+        if(body) {
+            init.body = JSON.stringify(body);
+        }
         return await fetch(fullUrl, init);
     }
 

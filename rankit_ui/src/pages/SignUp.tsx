@@ -6,6 +6,10 @@ import styles from './SignUp.module.css';
 import Button from '../components/Button';
 import validator from 'validator';
 import * as account from '../model/account';
+import { ApiError } from '../utils/apiClient';
+import Input from '../components/Input';
+import { VerificationState } from './Verification';
+import { ERROR_500 } from '../utils/text';
 
 const MinPasswordLength: number = 8;
 const UsernameRegex: RegExp = /^[a-zA-Z0-9_-]{4,32}$/;
@@ -64,7 +68,7 @@ function validatePassword(password: string): string | void {
 
 function SignUp() {
 
-  const [isError, setIsError] = useState<boolean>(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
   const client = useApiClient();
 
@@ -75,12 +79,21 @@ function SignUp() {
             return
         }
         try {
-            const createAccountRequest = parseForm(form);
-            await client.createAccount(createAccountRequest);
-            navigate("/verification", { state: { "email": createAccountRequest.email }});
+            const request = parseForm(form);
+            const response = await client.createAccount(request);
+            const state: VerificationState = {
+                accountId: response.id,
+                accountEmail: response.email,
+            }
+            navigate("/verification", { state });
         }
-        catch {
-            setIsError(true);
+        catch(e) {
+            if(e instanceof ApiError) {
+                setError(e.message);
+            }
+            else {
+                setError(ERROR_500);
+            }
         }
     }
 
@@ -101,22 +114,22 @@ function SignUp() {
             <h1>Sign Up</h1>
             <label className={styles.inputWrapper}>
                 <span className={styles.label}>Email</span>
-                <input type="email" name="email" onChange={onEmailChange}/>
+                <Input type="email" name="email" onChange={onEmailChange}/>
                 <p id="emailError" className={styles.error}/>
             </label>
             <label className={styles.inputWrapper}>
                 <span className={styles.label}>Username</span>
-                <input type="text" name="username" onChange={onUsernameChange}/>
+                <Input type="text" name="username" onChange={onUsernameChange}/>
                 <p id="usernameError" className={styles.error}/>
             </label>
             <label className={styles.inputWrapper}>
                 <span className={styles.label}>Password</span>
-                <input type="password" name="password" onChange={onPasswordChange}/>
+                <Input type="password" name="password" onChange={onPasswordChange}/>
                 <p id="passwordError" className={styles.error}/>
             </label>
             <p className={styles.memberText}>Already a member? <Link to="/login">Log In</Link></p>
             <Button type="submit">Submit</Button>
-            {isError && <p className={styles.unexpectedError}>Something went wrong on our end. Please try again.</p>}
+            <p className={styles.unexpectedError}>{error}</p>    
         </form>
     );
 };

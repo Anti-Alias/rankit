@@ -4,6 +4,7 @@ import About          from './pages/About';
 import SignUp         from './pages/SignUp';
 import LogIn          from './pages/LogIn';
 import Verification   from './pages/Verification';
+import Error          from './pages/Error';
 import { Routes, Route, Outlet } from 'react-router-dom';
 
 /** Main application element */
@@ -19,6 +20,7 @@ function App() {
           <Route path="things"        element={<Things/>}/>
           <Route path="categories"    element={<Categories/>}/>
           <Route path="verification"  element={<Verification/>}/>
+          <Route path="error"         element={<Error/>}/>
           <Route path="*"             element={<PageNotFound/>}/>
         </Route>
       </Routes>

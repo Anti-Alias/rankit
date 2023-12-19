@@ -1,0 +1,34 @@
+.Unverified {
+    display: flex;
+    padding: 5px;
+    justify-content: space-around;
+    flex-direction: column;
+    align-items: center;
+    height: 250px;
+}
+
+.Unverified input {
+    width: 20px;
+    margin: 10px;
+    letter-spacing: 5px;
+    text-align: center;
+}
+
+.Unverified label {
+    font-weight: bold;
+}
+
+.Verified {
+    display: flex;
+    padding: 5px;
+    justify-content: space-around;
+    flex-direction: column;
+    align-items: center;
+}
+
+.error {
+    font-size: 16px;
+    height: 20px;
+    margin: 0;
+    color: var(--colorError);
+}

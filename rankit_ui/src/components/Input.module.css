@@ -1,0 +1,14 @@
+.inputClass {
+    margin: 4px 0 0 0;
+    border-radius: 5px;
+    border: solid var(--color-border);
+    border-width: 2px;
+    font-size: 18px;
+    height: 30px;
+    outline: 1px solid var(--colorOutline);
+    transition: outline-color var(--transitionTime);
+}
+
+.inputClass:focus {
+    outline: 2px solid var(--colorOutlineFocus);
+}
