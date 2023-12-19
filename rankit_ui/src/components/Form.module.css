@@ -7,3 +7,9 @@
     background-color:   var(--colorForm);
     filter:             var(--filterCard);
 }
+
+.customForm label {
+    display: flex;
+    flex-direction: column;
+    margin-top: 10px;
+}

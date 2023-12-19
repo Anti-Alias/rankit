@@ -4,7 +4,7 @@ import styles from "./Form.module.css";
 interface FormProps {
     onSubmit?: FormEventHandler<HTMLFormElement>,
     noValidate?: boolean
-    children: ReactNode
+    children?: ReactNode
 }
 
 function Form(props: FormProps) {

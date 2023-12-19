@@ -26,19 +26,21 @@ function Input(props: InputProps) {
         displayElem = <></>;
     }
 
-    return (<>
-        <div>{displayElem}</div>
-        <input
-            id={id}
-            name={name}
-            type={type}
-            maxLength={maxLength}
-            onChange={onChange}
-            className={styles.inputClass}
-            required={required}
-        />
-        <p id={errorId} className={styles.error}/>
-    </>);
+    return (
+        <label>
+            <div>{displayElem}</div>
+            <input
+                id={id}
+                name={name}
+                type={type}
+                maxLength={maxLength}
+                onChange={onChange}
+                className={styles.inputClass}
+                required={required}
+            />
+            <p id={errorId} className={styles.error}/>
+        </label>
+    );
 }
 
 export default Input;

@@ -74,7 +74,6 @@ function SignUp() {
   const client = useApiClient();
 
   const onFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
-        
         event.preventDefault();
         const form = event.currentTarget;
         if(!Validator.validateForm(form)) {
@@ -113,38 +112,32 @@ function SignUp() {
 
     return (
         <Form onSubmit={onFormSubmit} noValidate>
-            <h1>Sign Up</h1>
-            <label className={styles.inputWrapper}>
-                <Input
-                    required
-                    errorId="emailError"
-                    type="email"
-                    name="email"
-                    displayName="Email"
-                    onChange={onEmailChange}
-                />
-            </label>
-            <label className={styles.inputWrapper}>
-                <Input
-                    required
-                    errorId="usernameError"
-                    type="text"
-                    name="username"
-                    displayName="Username"
-                    onChange={onUsernameChange}
-                />
-            </label>
-            <label className={styles.inputWrapper}>
-                <Input
-                    required
-                    errorId="passwordError"
-                    type="password"
-                    name="password"
-                    displayName="Password"
-                    onChange={onPasswordChange}
-                />
-            </label>
-            <p className={styles.memberText}>Already a member? <Link to="/login">Log In</Link></p>
+            <h1 className={styles.header}>Sign Up</h1>
+            <Input
+                required
+                errorId="emailError"
+                type="email"
+                name="email"
+                displayName="Email"
+                onChange={onEmailChange}
+            />
+            <Input
+                required
+                errorId="usernameError"
+                type="text"
+                name="username"
+                displayName="Username"
+                onChange={onUsernameChange}
+            />
+            <Input
+                required
+                errorId="passwordError"
+                type="password"
+                name="password"
+                displayName="Password"
+                onChange={onPasswordChange}
+            />
+            <p className={styles.memberText}>Already a member? <Link to="/signup">Log In</Link></p>
             <Button type="submit">Submit</Button>
             <p className={styles.unexpectedError}>{error}</p>    
         </Form>
