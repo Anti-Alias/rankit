@@ -34,34 +34,37 @@ function parseForm(form: HTMLFormElement): account.CreateRequest {
 }
 
 function validateEmail(email: string): string | void {
-    if(!email) {
+    const value = email.trim();
+    if(!value) {
         return "Required";
     }
-    if(!validator.isEmail(email)) {
+    if(!validator.isEmail(value)) {
         return "Invalid email";
     }
 }
 
 function validateUsername(username: string): string | void {
-    if(!username) {
+    const value = username.trim();
+    if(!value) {
         return "Required";
     }
-    if(!UsernameRegex.test(username)) {
+    if(!UsernameRegex.test(value)) {
         return "Invalid username";
     }
 }
 
 function validatePassword(password: string): string | void {
-    if(!password) {
+    const value = password.trim();
+    if(!value) {
         return "Required";
     }
-    if(password.length < MinPasswordLength) {
+    if(value.length < MinPasswordLength) {
         return `Password must be at least ${MinPasswordLength} characters`
     }
-    if(!AlphaNumericRegex.test(password)) {
+    if(!AlphaNumericRegex.test(value)) {
         return "Requires at least one alphanumeric character";
     }
-    if(!SpecialCharacterRegex.test(password)) {
+    if(!SpecialCharacterRegex.test(value)) {
         return "Requires at least one special character";
     }
 }
@@ -139,7 +142,7 @@ function SignUp() {
             />
             <p className={styles.memberText}>Already a member? <Link to="/signup">Log In</Link></p>
             <Button type="submit">Submit</Button>
-            <p className={styles.unexpectedError}>{error}</p>    
+            <p className={styles.error}>{error}</p>    
         </Form>
     );
 };

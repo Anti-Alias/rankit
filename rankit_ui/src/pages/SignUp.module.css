@@ -3,11 +3,6 @@
     margin-bottom: 10px;
 }
 
-.label {
-    font-size: 18px;
-    margin: 0;
-}
-
 .memberText {
     font-weight: bold;
     margin: 20px 0 10px 0;
@@ -22,17 +17,8 @@
     color: var(--colorError);
     height: 15px;
     margin: 0;
-    padding: 2px 0 0 0;
-    font-size: 13px;
-    font-weight: bold;
-}
-
-.unexpectedError {
-    color: var(--colorError);
-    height: 15px;
-    margin: 0;
     padding: 8px 0 0 0;
-    font-size: 13px;
+    font-size: 16px;
     font-weight: bold;
     text-align: center;
 }
