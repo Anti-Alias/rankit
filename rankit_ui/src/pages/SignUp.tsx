@@ -4,10 +4,11 @@ import { FormValidator } from '../utils/form';
 import { useApiClient } from '../components/AppDataProvider';
 import styles from './SignUp.module.css';
 import Button from '../components/Button';
+import Input from '../components/Input';
+import Form from '../components/Form';
 import validator from 'validator';
 import * as account from '../model/account';
 import { ApiError } from '../utils/apiClient';
-import Input from '../components/Input';
 import { VerificationState } from './Verification';
 import { ERROR_500 } from '../utils/text';
 
@@ -73,6 +74,7 @@ function SignUp() {
   const client = useApiClient();
 
   const onFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        
         event.preventDefault();
         const form = event.currentTarget;
         if(!Validator.validateForm(form)) {
@@ -110,27 +112,42 @@ function SignUp() {
     } 
 
     return (
-        <form className={styles.SignUp} onSubmit={onFormSubmit} noValidate>
+        <Form onSubmit={onFormSubmit} noValidate>
             <h1>Sign Up</h1>
             <label className={styles.inputWrapper}>
-                <span className={styles.label}>Email</span>
-                <Input type="email" name="email" onChange={onEmailChange}/>
-                <p id="emailError" className={styles.error}/>
+                <Input
+                    required
+                    errorId="emailError"
+                    type="email"
+                    name="email"
+                    displayName="Email"
+                    onChange={onEmailChange}
+                />
             </label>
             <label className={styles.inputWrapper}>
-                <span className={styles.label}>Username</span>
-                <Input type="text" name="username" onChange={onUsernameChange}/>
-                <p id="usernameError" className={styles.error}/>
+                <Input
+                    required
+                    errorId="usernameError"
+                    type="text"
+                    name="username"
+                    displayName="Username"
+                    onChange={onUsernameChange}
+                />
             </label>
             <label className={styles.inputWrapper}>
-                <span className={styles.label}>Password</span>
-                <Input type="password" name="password" onChange={onPasswordChange}/>
-                <p id="passwordError" className={styles.error}/>
+                <Input
+                    required
+                    errorId="passwordError"
+                    type="password"
+                    name="password"
+                    displayName="Password"
+                    onChange={onPasswordChange}
+                />
             </label>
             <p className={styles.memberText}>Already a member? <Link to="/login">Log In</Link></p>
             <Button type="submit">Submit</Button>
             <p className={styles.unexpectedError}>{error}</p>    
-        </form>
+        </Form>
     );
 };
 

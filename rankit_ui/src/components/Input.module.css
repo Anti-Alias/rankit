@@ -12,3 +12,24 @@
 .inputClass:focus {
     outline: 2px solid var(--colorOutlineFocus);
 }
+
+.label {
+    font-size: 18px;
+    margin: 0;
+}
+
+.error {
+    color: var(--colorError);
+    height: 15px;
+    margin: 0;
+    padding: 2px 0 0 0;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.required {
+    color: var(--colorError);
+    height: 15px;
+    margin: 5px;
+    font-weight: bold;
+}

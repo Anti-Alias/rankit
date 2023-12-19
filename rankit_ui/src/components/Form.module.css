@@ -1,0 +1,9 @@
+.customForm {
+    display:            flex;
+    flex-direction:     column;
+    border-radius:      10px;
+    padding:            40px 60px 40px 60px;
+    width:              350px;
+    background-color:   var(--colorForm);
+    filter:             var(--filterCard);
+}
