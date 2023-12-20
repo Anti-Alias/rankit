@@ -65,8 +65,8 @@ pub async fn create_app_from_env(migrate: bool) -> Result<Router, anyhow::Error>
         // Above routes require authentication.         
         .route_layer(authenticate)          
         .route("/api/account",                              post(account::create))      // Creates a new account.
-        .route("/api/login",                                post(account::login))       // Logs in an account and return a Claims JWT.
         .route("/api/account/:account_id/verify/:token",    post(account::verify))      // Verifies an account.
+        .route("/api/login",                                post(account::login))       // Logs in an account and return a Claims JWT.
         .route("/api/things",                               get(thing::list))           // Gets all Things.
         .route("/api/thing/:id",                            get(thing::single))         // Gets a single Thing.
         .route("/api/categories",                           get(category::list))        // Gets all Categories.

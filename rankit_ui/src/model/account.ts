@@ -15,3 +15,12 @@ export interface CreateResponse {
     name: string,
     email: string,
 }
+
+export type Role = "basic" | "admin" | "root";
+
+export interface Account {
+    id: number,
+    name: string,
+    email: string,
+    role: Role
+}

@@ -21,7 +21,7 @@ function useApiClient(): ApiClient {
 /**
  * Provides a {@link AppData} based on parameters stored in a .env file.
  */
-function AppDataProvider({children}: PropsWithChildren<{}>) {
+function AppDataProvider(props: PropsWithChildren<{}>) {
     const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
     if(!apiBaseUrl) {
         throw new Error("Env var REACT_APP_API_BASE_URL  not set");
@@ -29,7 +29,7 @@ function AppDataProvider({children}: PropsWithChildren<{}>) {
     const appData = {
         client: new ApiClient(apiBaseUrl)
     }
-    return <AppDataContext.Provider value={appData}>{children}</AppDataContext.Provider>;
+    return <AppDataContext.Provider value={appData}>{props.children}</AppDataContext.Provider>;
 }
 
 export { useApiClient };

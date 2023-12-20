@@ -11,6 +11,7 @@
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "@types/validator": "^13.11.7",
+    "base-64": "^1.0.0",
     "react": "^18.2.0",
     "react-coundown": "^1.0.2",
     "react-countdown": "^2.3.5",

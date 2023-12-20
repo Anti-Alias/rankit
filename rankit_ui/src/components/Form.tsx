@@ -11,7 +11,7 @@ function Form(props: FormProps) {
     const { onSubmit, noValidate, children } = props;
     return (
         <form className={styles.customForm} onSubmit={onSubmit} noValidate={noValidate}>
-            {children}
+            {children}  
         </form>
     );
 }

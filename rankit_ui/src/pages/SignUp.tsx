@@ -10,7 +10,7 @@ import validator from 'validator';
 import * as account from '../model/account';
 import { ApiError } from '../utils/apiClient';
 import { VerificationState } from './Verification';
-import { ERROR_500 } from '../utils/text';
+import { ERROR_500 } from '../utils/constants';
 
 const MinPasswordLength: number = 8;
 const UsernameRegex: RegExp = /^[a-zA-Z0-9_-]{4,32}$/;

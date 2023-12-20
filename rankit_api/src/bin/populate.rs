@@ -22,11 +22,11 @@ async fn main() {
     println!("___Starting API___");
     let app = app::create_app_from_env(true).await.unwrap();
     let client = TestClient::new(app);
-    let root_name: String = read_var(env_names::API_ROOT_ACCOUNT_NAME).unwrap();
+    let root_email: String = read_var(env_names::API_ROOT_ACCOUNT_EMAIL).unwrap();
     let root_pass: String = read_var(env_names::API_ROOT_ACCOUNT_PASSWORD).unwrap();
 
     println!("___Logging in as root___");
-    let root_bearer = login(&root_name, &root_pass, &client).await;
+    let root_bearer = login(&root_email, &root_pass, &client).await;
 
     println!("___Creating accounts___");
     let(_basic_id, admin_id) = join!(
@@ -75,8 +75,8 @@ async fn main() {
     println!("Duration: {:.2} seconds", duration.as_secs_f32());
 }
 
-async fn login(root_name: &str, root_pass: &str, client: &TestClient) -> String {
-    let credentials = format!("{}:{}", root_name, root_pass);
+async fn login(root_email: &str, root_pass: &str, client: &TestClient) -> String {
+    let credentials = format!("{}:{}", root_email, root_pass);
     let credentials = general_purpose::STANDARD_NO_PAD.encode(credentials);
     let response = client.post("/api/account/login")
         .header("Authorization", format!("Basic {}", credentials))

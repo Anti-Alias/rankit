@@ -197,7 +197,8 @@ pub async fn login(state: State<AppState>, auth: AuthBasic) -> Result<String, Ap
     let Some(login_password) = login_password else {
         return Err(AppError::MissingPassword);
     };
-    let result: Option<(i32, String, String, Role, bool, String)> = sqlx::query_as("SELECT id, email, name, role, verified, password FROM account WHERE name=$1 AND deleted IS NULL")
+    log::trace!("Fetching matching account");
+    let result: Option<(i32, String, String, Role, bool, String)> = sqlx::query_as("SELECT id, email, name, role, verified, password FROM account WHERE email=$1 AND deleted IS NULL")
         .bind(login_email)
         .fetch_optional(&state.pool).await?;
     let Some((id, email, name, role, verified, password)) = result else {
@@ -208,6 +209,7 @@ pub async fn login(state: State<AppState>, auth: AuthBasic) -> Result<String, Ap
     }
 
     // Checks that passwords match.
+    log::trace!("Matching passwords");
     match verify_password(login_password, password).await {
         Err(scrypt::password_hash::Error::Password) => return Err(AppError::NoMatchingAccount),
         Err(err) => return Err(AppError::PasswordHashError(err)),

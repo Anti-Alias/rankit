@@ -7,3 +7,12 @@
     color: var(--colorLink) !important;
     font-weight: bold;
 }
+
+.error {
+    color: var(--colorError);
+    height: 15px;
+    margin: 0;
+    padding: 2px 0 0 0;
+    font-size: 15px;
+    font-weight: bold;
+}

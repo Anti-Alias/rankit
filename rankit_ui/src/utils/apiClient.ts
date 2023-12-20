@@ -1,4 +1,5 @@
 import * as account from "../model/account";
+import { encode } from "base-64";
 
 /**
  * Error that occurred
@@ -33,6 +34,24 @@ class ApiClient {
         if(!response.ok) {
             throw new ApiError(await response.text(), response.status);
         }
+    }
+
+    /**
+     * Logs into an account.
+     * @returns JWT string.
+     */
+    async loginAccount(email: string, password: string): Promise<string> {
+        const fullUrl = `${this.baseUrl}/login`;
+        const response = await fetch(fullUrl, {
+            method: "POST",
+            headers: {
+                authorization: "Basic " + encode(`${email}:${password}`)
+            }
+        });
+        if(!response.ok) {
+            throw new ApiError(await response.text(), response.status);
+        }
+        return await response.text();
     }
 
     private async get(url: string): Promise<Response> {

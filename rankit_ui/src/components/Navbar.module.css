@@ -117,6 +117,24 @@
     filter: var(--filterButton);
 }
 
+.profile {
+    width: 50px;
+    border-radius: 3px;
+    text-align: center;
+    padding: 5px;
+    margin: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all var(--transitionTime);
+}
+
+.profile:hover {
+    color: var(--colorTextAlt);
+    background-color: var(--colorButtonAlt);
+    filter: var(--filterButton);
+}
+
+
 .logo {
     margin-right: 130px;
 }

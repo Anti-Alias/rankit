@@ -3,10 +3,29 @@ import styles from './Navbar.module.css';
 import { Link } from 'react-router-dom';
 import { useThemeState } from './ThemeProvider';
 import { capitalize } from '../utils/string';
+import { useAccountState } from './AccountProvider';
+
+
+function AccountButtons() {
+    const { account, setAccount } = useAccountState();
+    if(!account) {
+        return (<>
+            <Link to="/login" className={styles.login}>Log in</Link> |
+            <Link to="/signup" className={styles.signup}>Sign Up</Link>
+        </>);
+    }
+    else {
+        return (<>
+            <Link to="/profile" className={styles.profile}>Profile</Link> |
+            <Link to="/" className={styles.signup} onClick={() => setAccount(null)}>Sign Out</Link>
+        </>);
+    }
+}
 
 function Navbar() {
 
-    const {themeName, setThemeName} = useThemeState();
+    const { themeName, setThemeName } = useThemeState();
+
     const toggleTheme = () => {
         if(themeName === 'light') {
             setThemeName('dark');
@@ -28,8 +47,7 @@ function Navbar() {
                   <Link to='/categories' className={styles.option}>Categories</Link>
               </div>
               <div className={styles.right}>
-                  <Link to='/login' className={styles.login}>Log In</Link> |
-                  <Link to='/signup' className={styles.signup}>Sign Up</Link>
+                    <AccountButtons/>
                   <Button size="small" color="secondary" onClick={toggleTheme}>
                       {capitalize(themeName)}
                   </Button>

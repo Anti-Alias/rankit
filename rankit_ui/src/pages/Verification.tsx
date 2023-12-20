@@ -6,7 +6,7 @@ import DigitInput from "../components/DigitInput";
 import Button from "../components/Button";
 import { useApiClient } from "../components/AppDataProvider";
 import { ApiError } from "../utils/apiClient";
-import { ERROR_500 } from "../utils/text";
+import { ERROR_500 } from "../utils/constants";
 
 const DIGIT_LENGTH: number = 6;
 type VerificationState = {
