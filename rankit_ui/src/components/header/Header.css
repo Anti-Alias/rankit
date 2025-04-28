@@ -1,0 +1,47 @@
+.container {
+  background-color: var(--header-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  height: var(--header-height);
+}
+
+.logo {
+  background-color: var(--logo-color);
+  display: flex;
+  align-items: center;
+  padding: 0 10px 0 10px;
+  font-size: 20px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  padding: 0 10px 0 10px;
+  color: var(--text-color);
+}
+
+.item:hover {
+  color: var(--text-color);
+  background-color: var(--header-color-secondary);
+}
+
+.signin-login {
+  color: var(--signin-login-color);
+  padding: 0 10px 0 10px;
+}
+
+.signin-login:hover {
+  background-color: var(--header-color-secondary);
+  color: var(--signin-login-color-secondary);
+}
+
+.center {
+  display: flex;
+  align-items: stretch;
+}
+
+.right {
+  display: flex;
+  align-items: stretch;
+}
