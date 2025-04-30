@@ -27,14 +27,12 @@
   --signin-login-color: #333333;
   --signin-login-color-hover: #555555;
   --content-color: #111111;
+  --button-color: #532b7a;
+  --button-color-hover: #634680;
 }
 
 #root {
   flex-grow: 1;
-}
-
-.blog {
-  font-size: 18px;
 }
 
 a {
@@ -83,6 +81,19 @@ button:hover {
   background-color: var(--button-color-hover);
 }
 
+button.primary {
+  padding: 10px;
+  border-radius: 3px;
+  background-color: var(--button-color);
+}
+
+button.primary:hover {
+  background-color: var(--button-color-hover);
+}
+
+.blog {
+  font-size: 18px;
+}
 
 @media (prefers-color-scheme: light) {
   :root {

@@ -7,6 +7,7 @@ import { SearchInput } from "../widgets/SearchInput";
 
 export function Categories() {
   const [categories, setCategories] = useState<Page<Category>>({ data: [] });
+  const [search, setSearch] = useState("");
   const searchCategories = async (search: string) => {
     setCategories(await fetchCategories(search));
   };
@@ -25,6 +26,10 @@ export function Categories() {
     <div className="Categories">
       <SearchInput search={searchCategories} placeholder="Search Categories" />
       <ul className="card-list">{categoryCards}</ul>
+      {
+        categories.cursor &&
+        <button className="primary">Load More</button>
+      }
     </div>
   )
 }

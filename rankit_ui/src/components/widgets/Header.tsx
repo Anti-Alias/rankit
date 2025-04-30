@@ -6,13 +6,13 @@ export function Header() {
     <div className="Header">
       <NavLink to="/" className="logo">Rankit</NavLink>
       <div className="center">
-        <NavLink to="/" className="item">Home</NavLink>
-        <NavLink to="/things" className="item">Things</NavLink>
-        <NavLink to="/categories" className="item">Categories</NavLink>
+        <NavLink to="/" className="nav-item">Home</NavLink>
+        <NavLink to="/things" className="nav-item">Things</NavLink>
+        <NavLink to="/categories" className="nav-item">Categories</NavLink>
       </div>
       <div className="right">
-        <button type="button" className='signin-login'>Sign In</button>
-        <button type="button" className='signin-login'>Sign Up</button>
+        <NavLink to="/login" className="nav-item">Log In</NavLink>
+        <NavLink to="/signup" className="nav-item">Sign Up</NavLink>
       </div>
     </div>
   )

@@ -6,10 +6,19 @@ export interface Category {
   image: string,
 }
 
-export async function fetchCategories(search: string): Promise<Page<Category>> {
+export async function fetchCategories(search: string, cursor?: string): Promise<Page<Category>> {
   await sleep(1000);
   const data = allCategories.data.filter(cat => cat.name.includes(search));
-  return { data };
+  const curs = cursor ? parseInt(cursor) : 0;
+  const nextCursor = curs + pageSize;
+  if(data.length-1 > nextCursor) {
+    const splicedData = data.splice(curs, nextCursor-curs);
+    return { data: splicedData, cursor: nextCursor.toString() };
+  }
+  else {
+    const splicedData = data.splice(curs, nextCursor-curs);
+    return { data: splicedData }
+  }
 }
 
 function sleep(ms: number): Promise<void> {
@@ -17,6 +26,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 
+const pageSize = 10;
 const allCategories: Page<Category> = {
   data: [
     {

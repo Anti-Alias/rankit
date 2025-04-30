@@ -14,6 +14,7 @@
   background-color: var(--logo-color);
   display: flex;
   align-items: center;
+  margin: 2px;
   padding: 0 10px 0 10px;
   font-size: 20px;
 }
@@ -22,28 +23,18 @@
   color: var(--text-color);
 }
 
-.item {
+.nav-item {
   display: flex;
   align-items: center;
   padding: 0 10px 0 10px;
+  margin: 2px;
   color: var(--text-color);
   background-color: var(--navbar-item-color);
 }
 
-.item:hover {
+.nav-item:hover {
   color: var(--text-color);
   background-color: var(--navbar-item-color-hover);
-}
-
-.signin-login {
-  background-color: var(--signin-login-color);
-  padding: 0 10px 0 10px;
-}
-
-.signin-login:hover {
-  background-color: var(--signin-login-color-hover);
-  color: var(--signin-login-text-color-hover);
-  color: var(--signin-login-color-selected);
 }
 
 .center {
