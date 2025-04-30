@@ -1,12 +1,16 @@
-.container {
-  background-color: var(--header-color);
+.Header {
+  background-color: var(--navbar-color);
   display: flex;
   justify-content: space-between;
   align-items: stretch;
-  height: var(--header-height);
+  align-self: stretch;
+  height: var(--navbar-height);
+  position: sticky;
+  top: 0;
 }
 
 .logo {
+  color: var(--text-color);
   background-color: var(--logo-color);
   display: flex;
   align-items: center;
@@ -14,26 +18,32 @@
   font-size: 20px;
 }
 
+.logo:hover {
+  color: var(--text-color);
+}
+
 .item {
   display: flex;
   align-items: center;
   padding: 0 10px 0 10px;
   color: var(--text-color);
+  background-color: var(--navbar-item-color);
 }
 
 .item:hover {
   color: var(--text-color);
-  background-color: var(--header-color-secondary);
+  background-color: var(--navbar-item-color-hover);
 }
 
 .signin-login {
-  color: var(--signin-login-color);
+  background-color: var(--signin-login-color);
   padding: 0 10px 0 10px;
 }
 
 .signin-login:hover {
-  background-color: var(--header-color-secondary);
-  color: var(--signin-login-color-secondary);
+  background-color: var(--signin-login-color-hover);
+  color: var(--signin-login-text-color-hover);
+  color: var(--signin-login-color-selected);
 }
 
 .center {

@@ -1,15 +1,13 @@
-import React from 'react';
-import logo from './logo.svg';
 import './App.css';
-import { Header } from './components/header/Header';
+import { Header } from './components/widgets/Header';
 import { Outlet } from 'react-router';
 
 function App() {
   return (
     <div className='App'>
-      <Header/>
+      <Header />
       <div className="content">
-        <Outlet/>
+        <Outlet />
       </div>
     </div>
   );

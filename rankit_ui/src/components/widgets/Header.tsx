@@ -3,8 +3,8 @@ import { NavLink } from "react-router";
 
 export function Header() {
   return (
-    <div className="container">
-      <button type="button" className="logo">Rankit</button>
+    <div className="Header">
+      <NavLink to="/" className="logo">Rankit</NavLink>
       <div className="center">
         <NavLink to="/" className="item">Home</NavLink>
         <NavLink to="/things" className="item">Things</NavLink>

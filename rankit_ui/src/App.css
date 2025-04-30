@@ -1,12 +1,16 @@
 .App {
   text-align: center;
-  background-color: red;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: var(--content-color);
 }
 
 .content {
-  background-color: var(--content-color);
   display: flex;
   justify-content: center;
+  width: calc(100vw - 800px);
   height: calc(100vh - var(--header-height)); 
+  padding-top: 20px;
   overflow-y: auto;
 }
