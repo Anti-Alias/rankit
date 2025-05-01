@@ -3,14 +3,14 @@ import { Category, fetchCategories } from "../../utils/category";
 import { Page } from "../../utils/page";
 import "./Categories.css";
 
-type State = 'NOT_LOADING' | 'LOADING' | 'ERROR';
+type State = 'INIT' | 'NOT_LOADING' | 'LOADING' | 'ERROR';
 
 export function Categories() {
 
   const [categories, setCategories] = useState<Page<Category>>({ data: [] });
   const [search, setSearch] = useState('');
   const [currentSearch, setCurrentSearch] = useState('');
-  const [state, setState] = useState<State>('NOT_LOADING');
+  const [state, setState] = useState<State>('INIT');
 
   const startSearch = async () => {
     if(state === 'LOADING') { return };
@@ -45,19 +45,8 @@ export function Categories() {
   };
 
   const clearSearch = async () => {
-    if(state === 'LOADING') { return };
-    setState('LOADING');
     setSearch('');
-    setCurrentSearch('');
-    setCategories({ data: [] });
-    try {
-      const page = await fetchCategories('');
-      setCategories(page);
-      setState('NOT_LOADING');
-    }
-    catch {
-      setState('ERROR');
-    }
+    await startSearch();
   };
 
   const submit = (event: FormEvent) => {
@@ -97,7 +86,9 @@ export function Categories() {
         </div>
       </form>
       <ul className="card-list">{cards}</ul>
-      { state === 'LOADING' && <img src="images/icons/loading.svg" className="spinner"/> }
+      {
+        (state === 'INIT' || state == 'LOADING') &&
+        <img src="images/icons/loading.svg" className="spinner"/> }
       {
         state === 'NOT_LOADING' &&
         categories.cursor &&
