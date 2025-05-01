@@ -4,6 +4,7 @@ export interface Category {
   id: number,
   name: string,
   image: string,
+  color: string,
 }
 
 export async function fetchCategories(search: string, cursor?: string): Promise<Page<Category>> {
@@ -25,7 +26,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const pageSize: number = 28;
+const pageSize: number = 32;
 
 function allCategories(): Category[] {
   const result: Category[] = [];
@@ -34,16 +35,19 @@ function allCategories(): Category[] {
       id: i,
       name: `Movies ${i}`,
       image: 'movies.svg',
+      color: '#443388',
     });
     result.push({
       id: i+1,
       name: `TV Shows ${i+1}`,
       image: 'tv.svg',
+      color: '#884433',
     });
     result.push({
       id: i+2,
       name: `Games ${i+2}`,
       image: 'games.svg',
+      color: '#338844',
     });
   }
   return result;

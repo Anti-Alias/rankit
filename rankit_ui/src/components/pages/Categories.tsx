@@ -46,7 +46,18 @@ export function Categories() {
 
   const clearSearch = async () => {
     setSearch('');
-    await startSearch();
+    if(state === 'LOADING') { return };
+    setState('LOADING');
+    setCategories({ data: [] });
+    setCurrentSearch('');
+    try {
+      const page = await fetchCategories('');
+      setCategories(page);
+      setState('NOT_LOADING');
+    }
+    catch {
+      setState('ERROR');
+    }
   };
 
   const submit = (event: FormEvent) => {
@@ -60,9 +71,13 @@ export function Categories() {
 
   const cards = categories.data.map(category => {
     const src = `images/categories/${category.image}`;
+    const style = {
+      backgroundColor: category.color,
+      backgroundColorHover: 'red',
+    };
     return (
       <li key={category.id}>
-        <button type="button" className="card">
+        <button type="button" className="card" style={style}>
           <img className="card-image" src={src} />
           {category.name}
         </button>
@@ -106,5 +121,4 @@ export function Categories() {
     </div>
   )
 }
-
 
