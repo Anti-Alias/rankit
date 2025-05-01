@@ -28,9 +28,45 @@
   background-color: var(--card-color-hover);
 }
 
+.search-wrapper {
+  position: relative;
+}
+
+.search {
+  width: 300px;
+}
+
+.cross {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  background-color: inherit;
+}
+
+.cross:hover {
+  background-color: inherit;
+}
+
+.cross img {
+  height: 25px;
+}
+
 .card-image {
   width: 64px;
   height: 64px;
   padding: 10px;
 }
 
+.spinner {
+  width: 32px;
+  animation: 1s infinite linear spin;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

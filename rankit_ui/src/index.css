@@ -29,6 +29,7 @@
   --content-color: #111111;
   --button-color: #532b7a;
   --button-color-hover: #634680;
+  --error-color: #ff0000;
 }
 
 #root {
@@ -73,8 +74,8 @@ h1 {
 button {
   border: 0;
   cursor: pointer;
-  background-color: var(--button-color);
   font-size: inherit;
+  margin: 3px;
 }
 
 button:hover {
@@ -93,6 +94,10 @@ button.primary:hover {
 
 .blog {
   font-size: 18px;
+}
+
+.error {
+  color: var(--error-color);
 }
 
 @media (prefers-color-scheme: light) {

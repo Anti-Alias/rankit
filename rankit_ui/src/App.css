@@ -11,6 +11,6 @@
   justify-content: center;
   width: calc(100vw - 800px);
   height: calc(100vh - var(--header-height)); 
-  padding-top: 20px;
+  padding: 20px 0 20px 0;
   overflow-y: auto;
 }
