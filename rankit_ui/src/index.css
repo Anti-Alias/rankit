@@ -17,19 +17,20 @@
   --card-color-hover: #555555;
   --card-width: 120px;
   --button-color: #555555;
-  --button-color-hover: #888888;
   --text-color: #ffffff;
   --logo-color: #000000;
   --navbar-height: 60px;
   --navbar-color: #000000;
   --navbar-item-color: #000000;
-  --navbar-item-color-hover: #222222;
+  --navbar-item-color-hover: #ffffff;
+  --navbar-item-text-color-hover: #000000;
   --signin-login-color: #333333;
   --signin-login-color-hover: #555555;
-  --content-color: #181818;
+  --content-color: #1A1A1A;
   --button-color: #532b7a;
-  --button-color-hover: #634680;
+  --button-color-hover: #775590;
   --error-color: #ff0000;
+  --hover-transition-time: 200ms;
 }
 
 #root {
@@ -86,6 +87,7 @@ button.primary {
   padding: 10px;
   border-radius: 3px;
   background-color: var(--button-color);
+  transition: background-color var(--hover-transition-time);
 }
 
 button.primary:hover {

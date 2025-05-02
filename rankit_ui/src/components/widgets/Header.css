@@ -24,17 +24,18 @@
   color: var(--text-color);
 }
 
-.nav-item {
+.navbar-item {
   display: flex;
   align-items: center;
   padding: 0 10px 0 10px;
   margin: 2px;
   color: var(--text-color);
   background-color: var(--navbar-item-color);
+  transition: background-color var(--hover-transition-time);
 }
 
-.nav-item:hover {
-  color: var(--text-color);
+.navbar-item:hover {
+  color: var(--navbar-item-text-color-hover);
   background-color: var(--navbar-item-color-hover);
 }
 

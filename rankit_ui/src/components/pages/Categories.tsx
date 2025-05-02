@@ -71,10 +71,7 @@ export function Categories() {
 
   const cards = categories.data.map(category => {
     const src = `images/categories/${category.image}`;
-    const style = {
-      backgroundColor: category.color,
-      backgroundColorHover: 'red',
-    };
+    const style = { backgroundColor: category.color };
     return (
       <li key={category.id}>
         <button type="button" className="card" style={style}>
