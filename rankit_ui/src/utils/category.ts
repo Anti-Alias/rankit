@@ -1,11 +1,7 @@
+import { ScrollItem } from "../components/widgets/InfiniteScroll";
 import { Page } from "./page";
 
-export interface Category {
-  id: number,
-  name: string,
-  image: string,
-  color: string,
-}
+export interface Category extends ScrollItem { }
 
 export async function fetchCategories(search: string, cursor?: string): Promise<Page<Category>> {
   await sleep(1000);
@@ -30,23 +26,29 @@ const pageSize: number = 32;
 
 function allCategories(): Category[] {
   const result: Category[] = [];
-  for (let i = 1; i <= 100; i += 3) {
+  for (let i = 1; i <= 100; i += 4) {
     result.push({
       id: i,
       name: `Movies ${i}`,
-      image: 'movies.svg',
+      image: 'images/categories/movies.jpg',
       color: '#443388',
     });
     result.push({
       id: i + 1,
       name: `TV Shows ${i + 1}`,
-      image: 'tv.svg',
+      image: 'images/categories/tv_shows.jpg',
       color: '#884433',
     });
     result.push({
       id: i + 2,
       name: `Games ${i + 2}`,
-      image: 'games.svg',
+      image: 'images/categories/video_games.png',
+      color: '#338844',
+    });
+    result.push({
+      id: i + 3,
+      name: `Food ${i + 3}`,
+      image: 'images/categories/food.jpg',
       color: '#338844',
     });
   }

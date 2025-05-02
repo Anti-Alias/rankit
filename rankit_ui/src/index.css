@@ -13,9 +13,10 @@
   /* Variables */
   --input-color: #ffffff;
   --input-text-color: #000000;
-  --card-color: #444444;
+  --card-color: #333333;
   --card-color-hover: #555555;
-  --card-width: 120px;
+  --card-width: 250px;
+  --card-height: 200px;
   --button-color: #555555;
   --text-color: #ffffff;
   --logo-color: #000000;
@@ -30,7 +31,7 @@
   --button-color: #532b7a;
   --button-color-hover: #775590;
   --error-color: #ff0000;
-  --hover-transition-time: 200ms;
+  --hover-transition-time: 150ms;
 }
 
 #root {

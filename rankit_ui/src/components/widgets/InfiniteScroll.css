@@ -1,4 +1,4 @@
-.Categories {
+.InfiniteScroll {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -20,12 +20,20 @@
   border-radius: 5px;
   background-color: var(--card-color);
   width: var(--card-width);
+  height: var(--card-height);
   cursor: pointer;
-  background-color: var(--card-color);
+  transition: background-color var(--hover-transition-time);
 }
 
 .card:hover {
   background-color: var(--card-color-hover);
+}
+
+.card-image {
+  width: 220px;
+  height: 150px;
+  padding: 10px;
+  border-radius: 15px;
 }
 
 .search-wrapper {
@@ -51,15 +59,15 @@
   height: 25px;
 }
 
-.card-image {
-  width: 64px;
-  height: 64px;
-  padding: 10px;
-}
 
 .spinner {
   width: 32px;
+  margin-top: 10px;
   animation: 1s infinite linear spin;
+}
+
+.message {
+  margin-top: 10px;
 }
 
 @keyframes spin {
