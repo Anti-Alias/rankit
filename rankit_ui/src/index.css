@@ -32,7 +32,16 @@
   --button-color-hover: #775590;
   --error-color: #ff0000;
   --hover-transition-time: 150ms;
+
+  /** Desktop */
+  --content-width: 1200px;
+
+  /** Tablet */
+  @media (max-width: 1600px) {
+    --content-width: inherit;
+  }
 }
+
 
 #root {
   flex-grow: 1;
