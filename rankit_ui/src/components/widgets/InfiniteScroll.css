@@ -37,18 +37,22 @@
   border-radius: 15px;
 }
 
-.search-wrapper {
+.search-form {
+  display: flex;
+  justify-content: center;
+  display: flex;
   position: relative;
+  width: 300px;
 }
 
-.search {
-  width: 300px;
+.search-form input {
+  flex-grow: 1;
 }
 
 .cross {
   position: absolute;
-  right: 5px;
-  top: 5px;
+  top: 2px;
+  right: 0;
   background-color: inherit;
 }
 

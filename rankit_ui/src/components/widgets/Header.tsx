@@ -11,7 +11,7 @@ export function Header() {
         <NavLink to="/categories" className="navbar-item">Categories</NavLink>
       </div>
       <div className="right">
-        <NavLink to="/login" className="navbar-item">Log In</NavLink>
+        <NavLink to="/construction" className="navbar-item">Log In</NavLink>
         <NavLink to="/signup" className="navbar-item">Sign Up</NavLink>
       </div>
     </div>
