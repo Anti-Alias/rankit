@@ -32,7 +32,7 @@
   --content-color: #1A1A1A;
   --primary-button-color: #33aa33;
   --primary-button-color-hover: #55cc55;
-  --error-color: #ff0000;
+  --error-color: #ff8844;
   --hover-transition-time: 150ms;
 
   /** Desktop */
@@ -125,6 +125,12 @@ button.primary:hover {
 
 .error {
   color: var(--error-color);
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  height: 60px;
 }
 
 @media (prefers-color-scheme: light) {

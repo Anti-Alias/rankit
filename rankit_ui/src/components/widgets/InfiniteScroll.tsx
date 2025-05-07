@@ -94,14 +94,14 @@ export function InfiniteScroll(props: InfiniteScrollProps) {
   return (
     <div className="InfiniteScroll">
       <form onSubmit={submit} className="search-form">
-          <input
-            value={search}
-            placeholder={searchPlaceholder}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
-          />
-          <button type="button" className="cross" onClick={clearSearch}>
-            <img src="images/icons/cross.svg" />
-          </button>
+        <input
+          value={search}
+          placeholder={searchPlaceholder}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
+        />
+        <button type="button" className="cross" onClick={clearSearch}>
+          <img src="images/icons/cross.svg" />
+        </button>
       </form>
       {
         cards.length > 0 &&
