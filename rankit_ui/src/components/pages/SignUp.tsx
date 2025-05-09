@@ -64,7 +64,7 @@ export function SignUp() {
         </div>
         <button className="primary">Submit</button>
       </form>
-      <p>Already have an account? <NavLink to="/construction">Log In</NavLink></p>
+      <p>Already have an account? <NavLink to="/login">Log In</NavLink></p>
     </div>
   )
 }
