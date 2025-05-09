@@ -1,7 +1,6 @@
 import { NavLink } from 'react-router';
 import { ChangeEvent, FormEvent, useState } from 'react';
 import { validateEmail, validatePassword, validatePasswordVerify } from '../../utils/validation.ts';
-import styles from './SignUp.module.css';
 
 export function SignUp() {
 
@@ -17,6 +16,7 @@ export function SignUp() {
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    setSubmitted(true);
     if(!isValid) {
       setSubmitted(true);
     }
@@ -27,7 +27,7 @@ export function SignUp() {
 
   return (
     <div className="panel">
-      <h1 className={styles.header}>Sign Up</h1>
+      <h1>Sign Up</h1>
       <form onSubmit={submit} noValidate>
         <div className="input-group">
           <input
@@ -64,9 +64,7 @@ export function SignUp() {
         </div>
         <button className="primary">Submit</button>
       </form>
-      <span className={styles.message}>
-        Already have an account? <NavLink to="/construction">Log In</NavLink>
-      </span>
+      <p>Already have an account? <NavLink to="/construction">Log In</NavLink></p>
     </div>
   )
 }

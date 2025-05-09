@@ -84,6 +84,7 @@ body {
 h1 {
   font-size: 35px;
   line-height: 1.1;
+  margin-top: 0;
 }
 
 button {
