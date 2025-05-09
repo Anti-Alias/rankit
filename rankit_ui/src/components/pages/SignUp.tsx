@@ -49,8 +49,7 @@ export function SignUp() {
             placeholder="Password"
             required
           />
-          {
-            submitted && passwordError && <span className="error">{passwordError}</span> }
+          { submitted && passwordError && <span className="error">{passwordError}</span> }
         </div>
         <div className="input-group">
           <input
