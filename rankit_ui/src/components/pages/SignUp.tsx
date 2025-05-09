@@ -1,9 +1,7 @@
 import { NavLink } from 'react-router';
 import { ChangeEvent, FormEvent, useState } from 'react';
+import { validateEmail, validatePassword, validatePasswordVerify } from '../../utils/validation.ts';
 import styles from './SignUp.module.css';
-
-/// Source: https://emailregex.com/
-const emailRegex: RegExp = /^(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])$/;
 
 export function SignUp() {
 
@@ -12,9 +10,19 @@ export function SignUp() {
   const [passwordVerify, setPasswordVerify] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
+  const emailError          = validateEmail(email);
+  const passwordError       = validatePassword(password);
+  const passwordVerifyError = validatePasswordVerify(passwordVerify, password);
+  const isValid = !emailError && !passwordError && !passwordVerifyError;
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    setSubmitted(true);
+    if(!isValid) {
+      setSubmitted(true);
+    }
+    else {
+      alert('TODO: Submit logic');
+    }
   }
 
   return (
@@ -30,14 +38,7 @@ export function SignUp() {
             placeholder="Email"
             required
           />
-          { 
-            submitted && !email &&
-            <span className="error">Required</span>
-          }
-          { 
-            submitted && email && !email.match(emailRegex) &&
-            <span className="error">Invalid Email</span>
-          }
+          { submitted && emailError && <span className="error">{emailError}</span> }
         </div>
         <div className="input-group">
           <input
@@ -49,9 +50,7 @@ export function SignUp() {
             required
           />
           {
-            submitted && !password &&
-            <span className="error">Required</span>
-          }
+            submitted && passwordError && <span className="error">{passwordError}</span> }
         </div>
         <div className="input-group">
           <input
@@ -62,14 +61,7 @@ export function SignUp() {
             placeholder="Password Verify"
             required
           />
-          {
-            submitted && !passwordVerify &&
-            <span className="error">Required</span>
-          }
-          {
-            submitted && password && passwordVerify && password != passwordVerify &&
-            <span className="error">Passwords do not match</span>
-          }
+          { submitted && !passwordError && passwordVerifyError && <span className="error">{passwordVerifyError}</span> }
         </div>
         <button className="primary">Submit</button>
       </form>
