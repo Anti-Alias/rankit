@@ -3,6 +3,7 @@ import App from './App.tsx'
 import { Home } from './components/pages/Home.tsx';
 import { Things } from './components/pages/Things.tsx';
 import { SignUp } from './components/pages/SignUp.tsx';
+import { Login } from './components/pages/Login.tsx';
 import { Categories } from './components/pages/Categories.tsx';
 import { UnderConstruction } from './components/pages/UnderConstruction.tsx';
 import { StrictMode } from 'react'
@@ -16,6 +17,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<App />}>
           <Route index element={<Home />}></Route>
           <Route path="signup" element={<SignUp/>}></Route>
+          <Route path="login" element={<Login/>}></Route>
           <Route path="things" element={<Things />}></Route>
           <Route path="categories" element={<Categories />}></Route>
           <Route path="construction" element={<UnderConstruction/>}></Route>
