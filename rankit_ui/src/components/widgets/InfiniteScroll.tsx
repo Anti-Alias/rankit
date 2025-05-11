@@ -9,6 +9,7 @@ export type InfiniteScrollProps = {
   searchPlaceholder?: string,
   notFoundText?: string,
   fetcher: (search: string, cursor?: string) => Promise<Page<ScrollItem>>,
+  onItemClick?: (id: number) => void
 }
 
 /// A growable list of items, fetched from an api using cursor-based pagination.
@@ -17,6 +18,7 @@ export function InfiniteScroll(props: InfiniteScrollProps) {
   const searchPlaceholder = props.searchPlaceholder ? props.searchPlaceholder : "Search";
   const fetcher = props.fetcher;
   const notFoundText = props.notFoundText ? props.notFoundText : "Not Found";
+  const onItemClick = props.onItemClick;
 
   const [items, setItems] = useState<Page<ScrollItem>>({ data: [] });
   const [search, setSearch] = useState('');
@@ -71,10 +73,16 @@ export function InfiniteScroll(props: InfiniteScrollProps) {
     }
   };
 
-  const submit = (event: FormEvent) => {
+  const handleItemClick = (item: number) => {
+    if(!onItemClick) return;
+    onItemClick(item);
+  };
+
+  const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     startSearch();
   };
+
 
   useEffect(() => {
     startSearch();
@@ -83,7 +91,11 @@ export function InfiniteScroll(props: InfiniteScrollProps) {
   const cards = items.data.map(scrollItem => {
     return (
       <li key={scrollItem.id}>
-        <button type="button" className="card">
+        <button
+          type="button"
+          className="card"
+          onClick={() => handleItemClick(scrollItem.id)}
+        >
           <img className="card-image" src={scrollItem.image} />
           {scrollItem.name}
         </button>
@@ -93,14 +105,14 @@ export function InfiniteScroll(props: InfiniteScrollProps) {
 
   return (
     <div className="InfiniteScroll">
-      <form onSubmit={submit} className="search-form">
+      <form onSubmit={handleSubmit} className="search-form">
         <input
           value={search}
           placeholder={searchPlaceholder}
           onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
         />
         <button type="button" className="cross" onClick={clearSearch}>
-          <img src="images/icons/cross.svg" />
+          <img src="/images/icons/cross.svg" />
         </button>
       </form>
       {
@@ -109,7 +121,7 @@ export function InfiniteScroll(props: InfiniteScrollProps) {
       }
       {
         (state === 'INIT' || state == 'LOADING') &&
-        <img src="images/icons/loading.svg" className="spinner" />}
+        <img src="/images/icons/loading.svg" className="spinner" />}
       {
         state === 'NOT_LOADING' &&
         items.cursor &&
@@ -129,7 +141,7 @@ export function InfiniteScroll(props: InfiniteScrollProps) {
 }
 
 
-/// Data for each card.
+/// Data for each item in the infinite scroll component.
 export interface ScrollItem {
   id: number,
   name: string,

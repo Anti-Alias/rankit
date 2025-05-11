@@ -10,7 +10,5 @@
   display: flex;
   justify-content: center;
   width: var(--content-width);
-  height: calc(100vh - var(--header-height)); 
   padding: 20px 0 20px 0;
-  overflow-y: auto;
 }

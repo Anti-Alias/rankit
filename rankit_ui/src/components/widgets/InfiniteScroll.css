@@ -5,37 +5,6 @@
   flex-wrap: wrap;
 }
 
-.card-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.card {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  margin: 5px;
-  padding: 10px;
-  border-radius: 5px;
-  background-color: var(--card-color);
-  width: var(--card-width);
-  height: var(--card-height);
-  cursor: pointer;
-  transition: background-color var(--hover-transition-time);
-}
-
-.card:hover {
-  background-color: var(--card-color-hover);
-}
-
-.card-image {
-  width: 220px;
-  height: 150px;
-  padding: 10px;
-  border-radius: 15px;
-}
 
 .search-form {
   display: flex;
@@ -62,13 +31,6 @@
 
 .cross img {
   height: 25px;
-}
-
-
-.spinner {
-  width: 32px;
-  margin-top: 10px;
-  animation: 1s infinite linear spin;
 }
 
 .message {

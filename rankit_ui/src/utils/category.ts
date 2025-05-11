@@ -1,4 +1,5 @@
 import { ScrollItem } from "../components/widgets/InfiniteScroll";
+import { allCategories } from "./db";
 import { Page } from "./page";
 
 export interface Category extends ScrollItem { }
@@ -23,31 +24,4 @@ function sleep(ms: number): Promise<void> {
 }
 
 const pageSize: number = 32;
-
-function allCategories(): Category[] {
-  const result: Category[] = [];
-  for (let i = 1; i <= 100; i += 4) {
-    result.push({
-      id: i,
-      name: `Movies ${i}`,
-      image: 'images/categories/movies.jpg',
-    });
-    result.push({
-      id: i + 1,
-      name: `TV Shows ${i + 1}`,
-      image: 'images/categories/tv_shows.jpg',
-    });
-    result.push({
-      id: i + 2,
-      name: `Games ${i + 2}`,
-      image: 'images/categories/video_games.png',
-    });
-    result.push({
-      id: i + 3,
-      name: `Food ${i + 3}`,
-      image: 'images/categories/food.jpg',
-    });
-  }
-  return result;
-}
 

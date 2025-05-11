@@ -1,10 +1,19 @@
 import { ScrollItem } from "../components/widgets/InfiniteScroll";
+import { Category } from "./category";
+import { allCategories, allThings, rawRankings } from "./db";
 import { Page } from "./page";
 
-export interface Thing extends ScrollItem { }
+export interface Thing extends ScrollItem {};
+export interface ThingWithRankings { thing: Thing, rankings: Ranking[] }
+export interface Ranking { category: Category, winRate: number }
 
-export async function fetchThings(search: string, cursor?: string): Promise<Page<Thing>> {
-  await sleep(1000);
+
+const sleepTime: number = 1000;
+const pageSize: number = 32;
+
+
+export async function fetchThingPage(search: string, cursor?: string): Promise<Page<Thing>> {
+  await new Promise(resolve => setTimeout(resolve, sleepTime));
   const data = allThings().filter(thing => thing.name.includes(search));
   const curs = cursor ? parseInt(cursor) : 0;
   const nextCursor = curs + pageSize;
@@ -18,31 +27,21 @@ export async function fetchThings(search: string, cursor?: string): Promise<Page
   }
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-const pageSize: number = 32;
-
-function allThings(): Thing[] {
-  const result: Thing[] = [];
-  for (let i = 1; i <= 100; i += 3) {
-    result.push({
-      id: i,
-      name: `Computer Mice ${i}`,
-      image: 'images/things/mice.jpg',
-    });
-    result.push({
-      id: i + 1,
-      name: `Rice ${i + 1}`,
-      image: 'images/things/rice.jpg',
-    });
-    result.push({
-      id: i + 2,
-      name: `Apples ${i + 2}`,
-      image: 'images/things/apples.jpg',
-    });
+export async function fetchThingWithRankings(thingId: number): Promise<ThingWithRankings> {
+  await new Promise(resolve => setTimeout(resolve, sleepTime));
+  const things              = allThings();
+  const categories          = allCategories();
+  const rankings: Ranking[] = rawRankings()
+    .filter(rawRanking => rawRanking.thingId === thingId)
+    .sort((a, b) => b.winRate - a.winRate)
+    .map(rawRanking => ({
+      category: categories[rawRanking.categoryId],
+      winRate: rawRanking.winRate,
+    }));
+  console.log(rankings);
+  return {
+    thing: things[thingId],
+    rankings,
   }
-  return result;
 }
 
