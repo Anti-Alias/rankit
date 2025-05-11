@@ -4,8 +4,11 @@ import { Page } from "./page";
 
 export interface Category extends ScrollItem { }
 
+const sleepTime: number = 1000;
+const pageSize: number = 32;
+
 export async function fetchCategories(search: string, cursor?: string): Promise<Page<Category>> {
-  await sleep(1000);
+  await new Promise(resolve => setTimeout(resolve, sleepTime));
   const data = allCategories().filter(cat => cat.name.includes(search));
   const curs = cursor ? parseInt(cursor) : 0;
   const nextCursor = curs + pageSize;
@@ -18,10 +21,3 @@ export async function fetchCategories(search: string, cursor?: string): Promise<
     return { data: splicedData }
   }
 }
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-const pageSize: number = 32;
-
